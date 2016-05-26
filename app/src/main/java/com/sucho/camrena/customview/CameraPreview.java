@@ -22,6 +22,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private SurfaceHolder surfaceHolder;
     private Camera camera;
     Context context;
+    int width,height;
     
     public CameraPreview(Context context, Camera camera) 
     {
@@ -30,6 +31,18 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         this.camera = camera;
         this.surfaceHolder = this.getHolder();
         this.surfaceHolder.addCallback(this);
+    }
+
+    public void switchCamera(Camera camera)
+    {
+        this.camera = camera;
+        try {
+        camera.setPreviewDisplay(surfaceHolder);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        camera.startPreview();
+        orientationChange(width,height);
     }
     
     @Override
@@ -54,7 +67,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) 
     {
         camera.stopPreview();
+        this.width = width;
+        this.height = height;
+        orientationChange(width,height);
+    }
 
+    private void orientationChange(int width,int height)
+    {
         Camera.Parameters parameters = camera.getParameters();
         WindowManager wm = (WindowManager)(context).getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();

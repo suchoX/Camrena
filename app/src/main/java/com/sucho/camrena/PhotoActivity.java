@@ -81,7 +81,14 @@ public class PhotoActivity extends AppCompatActivity {
         swapCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                if(camIdx == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                    camIdx = Camera.CameraInfo.CAMERA_FACING_BACK;
+                else
+                    camIdx = Camera.CameraInfo.CAMERA_FACING_FRONT;
+                camera.stopPreview();
+                camera.release();
+                camera = Camera.open(camIdx);
+                cameraPreview.switchCamera(camera);
             }
         });
     }
@@ -97,13 +104,18 @@ public class PhotoActivity extends AppCompatActivity {
                     Toast.makeText(PhotoActivity.this, "No Camera Found", Toast.LENGTH_LONG).show();
                     finish();
                 }
-            } else
+            }
+            else
                 cameraPreview = new CameraPreview(this, camera);
         }
-        else if(camIdx == Camera.CameraInfo.CAMERA_FACING_FRONT)
-            camera = getFrontCameraInstance();
-        else if(camIdx == Camera.CameraInfo.CAMERA_FACING_BACK)
-            camera = getBackCameraInstance();
+        else if(camIdx == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            camera = Camera.open(camIdx);
+            cameraPreview = new CameraPreview(this, camera);
+        }
+        else if(camIdx == Camera.CameraInfo.CAMERA_FACING_BACK) {
+            camera = Camera.open(camIdx);
+            cameraPreview = new CameraPreview(this, camera);
+        }
     }
 
     private Camera getFrontCameraInstance() {
