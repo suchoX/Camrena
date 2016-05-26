@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.hardware.Camera;
+import android.os.AsyncTask;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
@@ -47,17 +48,8 @@ public class PhotoActivity extends AppCompatActivity {
             if (imageFile == null) {
                 return;
             }
-            try {
-                FileOutputStream outStream = new FileOutputStream(imageFile);
-                bitmapImage.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
-                outStream.flush();
-                outStream.close();
-                MediaStore.Images.Media.insertImage(getContentResolver(),imageFile.getAbsolutePath(),imageFile.getName(),imageFile.getName());
-                camera.startPreview();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            new imageSave().execute(bitmapImage);
+            camera.startPreview();
         }
     };
 
@@ -153,7 +145,7 @@ public class PhotoActivity extends AppCompatActivity {
     }
     
     private static File getImageFile() {
-        File imageStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camrena");
+        File imageStorageDir = new File(Environment.getExternalStorageDirectory()+File.separator+"Camrena"+File.separator + "Photos");
         if (!imageStorageDir.exists()) {
             if (!imageStorageDir.mkdirs()) {
                 Log.e(TAG, "Couldn't create Directory");
@@ -205,5 +197,36 @@ public class PhotoActivity extends AppCompatActivity {
             result = (info.orientation - degrees + 360) % 360;
         }
         return result;
+    }
+
+    class imageSave extends AsyncTask<Bitmap, Void, Void>
+    {
+
+        @Override
+        protected void onPreExecute() {
+
+        }
+
+        @Override
+        protected Void doInBackground(Bitmap... params)
+        {
+            Bitmap bitmapImage = params[0];
+            try {
+                FileOutputStream outStream = new FileOutputStream(imageFile);
+                bitmapImage.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
+                outStream.flush();
+                outStream.close();
+                MediaStore.Images.Media.insertImage(getContentResolver(), imageFile.getAbsolutePath(), imageFile.getName(), imageFile.getName());
+            }catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+        @Override
+        protected void onPostExecute(Void result) {
+
+        }
     }
 }
