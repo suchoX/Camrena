@@ -7,6 +7,7 @@ import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.ExifInterface;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Environment;
@@ -42,6 +43,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     private CameraPreview cameraPreview;
     FrameLayout cameraPreviewFrame;
     FloatingActionButton photoCapture,videoCapture,swapCamera,stopRecord;
+    MediaPlayer cameraClick;
 
     int camIdx=0;
     File imageFile;
@@ -80,6 +82,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         initCamera();
         recorder = new MediaRecorder();
+        cameraClick = MediaPlayer.create(getApplication(), R.raw.camera_click);
         cameraPreviewFrame = (FrameLayout) findViewById(R.id.camera_preview);
         cameraPreviewFrame.addView(cameraPreview);
 
@@ -87,6 +90,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         photoCapture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                cameraClick.start();
                 camera.takePicture(null, null, captureCallback);
             }
         });
