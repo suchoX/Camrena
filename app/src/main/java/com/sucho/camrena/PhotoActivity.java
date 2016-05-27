@@ -1,9 +1,13 @@
 package com.sucho.camrena;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.hardware.Camera;
+import android.media.CamcorderProfile;
+import android.media.ExifInterface;
+import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -11,9 +15,14 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.sucho.camrena.customview.CameraPreview;
@@ -24,15 +33,25 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
-public class PhotoActivity extends AppCompatActivity {
+public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Callback {
     private static final String TAG = "PhotoActivity";
     private Camera camera;
     private CameraPreview cameraPreview;
+    FrameLayout cameraPreviewFrame;
     FloatingActionButton photoCapture,videoCapture,swapCamera;
 
     int camIdx=0;
     File imageFile;
+
+    MediaRecorder recorder;
+    Camera recordCam;
+    SurfaceView videoView;
+    TextView recordingText;
+    SurfaceHolder videoHolder;
+    boolean recording = false;
+    int surfaceWidth,surfaceHeight;
 
     Camera.PictureCallback captureCallback = new Camera.PictureCallback()
     {
@@ -57,8 +76,9 @@ public class PhotoActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         initCamera();
-        FrameLayout cameraPreviewFrame = (FrameLayout) findViewById(R.id.camera_preview);
+        cameraPreviewFrame = (FrameLayout) findViewById(R.id.camera_preview);
         cameraPreviewFrame.addView(cameraPreview);
 
         photoCapture = (FloatingActionButton) findViewById(R.id.photo_capture);
@@ -73,7 +93,18 @@ public class PhotoActivity extends AppCompatActivity {
         videoCapture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                if(!recording)
+                    initRecorder();
+                else
+                {
+                    recorder.stop();
+                    recorder.release();
+                    recording = false;
+                    videoView.setVisibility(View.GONE);
+                    cameraPreviewFrame.setVisibility(View.VISIBLE);
+                    initCamera();
+                    cameraPreviewFrame.addView(cameraPreview);
+                }
             }
         });
 
@@ -91,6 +122,10 @@ public class PhotoActivity extends AppCompatActivity {
                 cameraPreview.switchCamera(camera);
             }
         });
+
+        videoView = (SurfaceView)findViewById(R.id.video_preview);
+        recordingText = (TextView)findViewById(R.id.recording_text);
+
     }
 
     private void initCamera()
@@ -240,5 +275,123 @@ public class PhotoActivity extends AppCompatActivity {
         protected void onPostExecute(Void result) {
 
         }
+    }
+
+    private void initRecorder(){
+        cameraPreviewFrame.setVisibility(View.GONE);
+        cameraPreviewFrame.removeAllViews();
+        videoView.setVisibility(View.VISIBLE);
+        videoHolder = videoView.getHolder();
+        videoHolder.addCallback(this);
+
+
+        recordCam = Camera.open(camIdx);
+        setOrientation();
+        recordCam.unlock();
+
+        //recordCam.stopPreview();
+        recorder = new MediaRecorder();
+        recorder.setCamera(recordCam);
+        recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+        recorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+
+        File imageStorageDir = new File(Environment.getExternalStorageDirectory()+File.separator+"Camrena"+File.separator + "Videos");
+        if (!imageStorageDir.exists()) {
+            if (!imageStorageDir.mkdirs()) {
+                Log.e(TAG, "Couldn't create Directory");
+            }
+        }
+        CamcorderProfile cpHigh = CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH);
+        recorder.setProfile(cpHigh);
+
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        recorder.setOutputFile(imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4");
+        //setOrientation();
+        /*recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+        recorder.setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
+        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);*/
+        /*recorder.setMaxDuration(50000); // 50 seconds
+        recorder.setMaxFileSize(5000000); // Approximately 5 megabytes*/
+
+
+    }
+
+    private void prepareRecorder() {
+        recorder.setPreviewDisplay(videoHolder.getSurface());
+        try {
+            recorder.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+            finish();
+        }
+        recording = true;
+        recorder.start();
+    }
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        Log.e(TAG,"Video Surface Created");
+        prepareRecorder();
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height)
+    {
+        surfaceWidth = width;
+        surfaceHeight = height;
+        //setOrientation();
+        /*try {
+            recordCam.setPreviewDisplay(videoHolder);
+            recordCam.startPreview();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        /*Camera.Size size = getBestPreviewSize(width,height, recordCam.getParameters());
+        recorder.setVideoSize(size.width,size.height);*/
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.e(TAG,"Video Surface Destroyed");
+        if (recording) {
+            recorder.stop();
+            recorder.release();
+            recording = false;
+        }
+        recordCam.stopPreview();
+        recordCam.release();
+    }
+
+    private void setOrientation()
+    {
+        WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
+        Display display = wm.getDefaultDisplay();
+        //recordCam.stopPreview();
+
+        if(display.getRotation() == Surface.ROTATION_0)
+            recordCam.setDisplayOrientation(90);
+
+        if(display.getRotation() == Surface.ROTATION_270)
+            recordCam.setDisplayOrientation(180);
+        //recordCam.startPreview();
+    }
+    private Camera.Size getBestPreviewSize(int width, int height, Camera.Parameters parameters) {
+        Camera.Size result = null;
+
+        for (Camera.Size size : parameters.getSupportedPreviewSizes()) {
+            if (size.width <= width && size.height <= height) {
+                if (result == null) {
+                    result = size;
+                } else {
+                    int resultArea = result.width * result.height;
+                    int newArea = size.width * size.height;
+
+                    if (newArea > resultArea) {
+                        result = size;
+                    }
+                }
+            }
+        }
+        return (result);
     }
 }
