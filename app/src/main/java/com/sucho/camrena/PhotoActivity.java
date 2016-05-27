@@ -10,6 +10,7 @@ import android.media.ExifInterface;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -40,7 +41,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     private Camera camera;
     private CameraPreview cameraPreview;
     FrameLayout cameraPreviewFrame;
-    FloatingActionButton photoCapture,videoCapture,swapCamera;
+    FloatingActionButton photoCapture,videoCapture,swapCamera,stopRecord;
 
     int camIdx=0;
     File imageFile;
@@ -96,18 +97,6 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             public void onClick(View v) {
                 if(!recording)
                     initRecorder();
-                else
-                {
-                    recorder.stop();
-                    recorder.release();
-                    recorder = null;
-                    recorder = new MediaRecorder();
-                    recording = recorderPrep = recorderPreped = surfaceCreated = false;
-                    videoView.setVisibility(View.GONE);
-                    cameraPreviewFrame.setVisibility(View.VISIBLE);
-                    initCamera();
-                    cameraPreviewFrame.addView(cameraPreview);
-                }
             }
         });
 
@@ -123,6 +112,29 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
                 camera.release();
                 camera = Camera.open(camIdx);
                 cameraPreview.switchCamera(camera);
+            }
+        });
+
+        stopRecord = (FloatingActionButton) findViewById(R.id.stop_recording);
+        stopRecord.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(recording)
+                {
+                    recorder.stop();
+                    recorder.release();
+                    recorder = null;
+                    recorder = new MediaRecorder();
+                    recording = recorderPrep = recorderPreped = surfaceCreated = false;
+                    videoView.setVisibility(View.GONE);
+                    stopRecord.setVisibility(View.GONE);
+                    cameraPreviewFrame.setVisibility(View.VISIBLE);
+                    initCamera();
+                    cameraPreviewFrame.addView(cameraPreview);
+                    photoCapture.setVisibility(View.VISIBLE);
+                    videoCapture.setVisibility(View.VISIBLE);
+                    swapCamera.setVisibility(View.VISIBLE);
+                }
             }
         });
 
@@ -282,8 +294,12 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void initRecorder(){
         cameraPreviewFrame.setVisibility(View.GONE);
+        photoCapture.setVisibility(View.GONE);
+        videoCapture.setVisibility(View.GONE);
+        swapCamera.setVisibility(View.GONE);
         cameraPreviewFrame.removeAllViews();
         videoView.setVisibility(View.VISIBLE);
+        stopRecord.setVisibility(View.VISIBLE);
         videoHolder = videoView.getHolder();
         videoHolder.addCallback(this);
 
@@ -336,7 +352,33 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             finish();
         }
         recording = true;
+        blinkText();
         recorder.start();
+    }
+
+    private void blinkText()
+    {
+        final Handler handler = new Handler();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int timeToBlink = 1000;    //in milissegunds
+                try{Thread.sleep(timeToBlink);}catch (Exception e) {}
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if(recordingText.getVisibility() == View.VISIBLE)
+                            recordingText.setVisibility(View.INVISIBLE);
+                        else
+                            recordingText.setVisibility(View.VISIBLE);
+                        if(recording)
+                            blinkText();
+                        else
+                            recordingText.setVisibility(View.GONE);
+                    }
+                });
+            }
+        }).start();
     }
 
     @Override
