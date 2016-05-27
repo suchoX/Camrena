@@ -48,6 +48,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) 
     {
+        Log.e("Camera Preview","Camera Surface Created");
         try {
             camera.setPreviewDisplay(surfaceHolder);
             camera.startPreview();
@@ -59,7 +60,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) 
     {
-        Log.e("Camera Preview","Camera Preview Destroyed");
+        Log.e("Camera Preview","Camera Surface Destroyed");
         camera.stopPreview();
         camera.release();
     }
@@ -67,6 +68,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) 
     {
+        Log.e("Camera Preview","Camera Surface Changed");
         camera.stopPreview();
         this.width = width;
         this.height = height;

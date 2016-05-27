@@ -50,7 +50,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     SurfaceView videoView;
     TextView recordingText;
     SurfaceHolder videoHolder;
-    boolean recording = false;
+    boolean recording = false,recorderPrep=false,recorderPreped=false,surfaceCreated=false;
     int surfaceWidth,surfaceHeight;
 
     Camera.PictureCallback captureCallback = new Camera.PictureCallback()
@@ -78,6 +78,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         setContentView(R.layout.activity_photo);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         initCamera();
+        recorder = new MediaRecorder();
         cameraPreviewFrame = (FrameLayout) findViewById(R.id.camera_preview);
         cameraPreviewFrame.addView(cameraPreview);
 
@@ -99,7 +100,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
                 {
                     recorder.stop();
                     recorder.release();
-                    recording = false;
+                    recorder = null;
+                    recorder = new MediaRecorder();
+                    recording = recorderPrep = recorderPreped = surfaceCreated = false;
                     videoView.setVisibility(View.GONE);
                     cameraPreviewFrame.setVisibility(View.VISIBLE);
                     initCamera();
@@ -284,13 +287,12 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         videoHolder = videoView.getHolder();
         videoHolder.addCallback(this);
 
-
         recordCam = Camera.open(camIdx);
+        Log.e(TAG,"Video Cam Opened");
         setOrientation();
         recordCam.unlock();
 
         //recordCam.stopPreview();
-        recorder = new MediaRecorder();
         recorder.setCamera(recordCam);
         recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
         recorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
@@ -303,9 +305,17 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         }
         CamcorderProfile cpHigh = CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH);
         recorder.setProfile(cpHigh);
+        Log.e(TAG,"Profile Set");
 
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        Log.e(TAG,imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4");
         recorder.setOutputFile(imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4");
+
+        recorderPrep = true;
+
+        if(!recorderPreped && surfaceCreated)
+            prepareRecorder();
+
         //setOrientation();
         /*recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
@@ -317,9 +327,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     }
 
     private void prepareRecorder() {
-        recorder.setPreviewDisplay(videoHolder.getSurface());
+        Log.e(TAG,"Recorder Prepared");
         try {
             recorder.prepare();
+            recorderPreped=true;
         } catch (IOException e) {
             e.printStackTrace();
             finish();
@@ -331,12 +342,16 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         Log.e(TAG,"Video Surface Created");
-        prepareRecorder();
+        surfaceCreated=true;
+        recorder.setPreviewDisplay(videoHolder.getSurface());
+        if(recorderPrep)
+            prepareRecorder();
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height)
     {
+        Log.e(TAG,"Video Surface Changed");
         surfaceWidth = width;
         surfaceHeight = height;
         //setOrientation();
