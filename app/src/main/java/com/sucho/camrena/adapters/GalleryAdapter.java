@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -70,7 +71,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
         }
         @Override
         protected Bitmap doInBackground(String... params) {
-            Bitmap imageBitmap = BitmapFactory.decodeFile(params[0]);
+            Bitmap imageBitmap = decodeAndScale(params[0]);
             return imageBitmap;
         }
 
@@ -80,5 +81,67 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
             imageView.setImageBitmap(bitmap);
             super.onPostExecute(bitmap);
         }
+
+        private Bitmap decodeAndScale(String path) {
+
+            int reqWidth,reqHeight;
+            reqWidth = getScreenWidth((Activity)context)/4;
+
+            // First decode with inJustDecodeBounds=true to check dimensions
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(path, options);
+            reqHeight = getImageHeight(options,reqWidth);
+
+            options.inSampleSize = getSampleSize(options, reqWidth, reqHeight);
+
+            options.inJustDecodeBounds = false;
+            return BitmapFactory.decodeFile(path,options);
+
+        }
+
+        private int getSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight)
+        {
+            // Raw height and width of image
+            final int height = options.outHeight;
+            final int width = options.outWidth;
+            int inSampleSize = 1;
+
+            if (height > reqHeight || width > reqWidth) {
+
+                final int halfHeight = height / 2;
+                final int halfWidth = width / 2;
+
+                // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+                // height and width larger than the requested height and width.
+                while ((halfHeight / inSampleSize) > reqHeight
+                        && (halfWidth / inSampleSize) > reqWidth) {
+                    inSampleSize *= 2;
+                }
+            }
+
+            return inSampleSize;
+        }
+    }
+
+    public int getScreenWidth(Activity a) {
+
+        Display display = a.getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float density = a.getResources().getDisplayMetrics().density;
+        float dpWidth = outMetrics.widthPixels / density;
+
+        return (int) dpWidth;
+    }
+
+    private int getImageHeight(BitmapFactory.Options options,int width)
+    {
+        int height;
+        float imageRatio = (float)options.outHeight/(float)options.outWidth;
+        height =(int)(imageRatio*width);
+
+        return height;
     }
 }

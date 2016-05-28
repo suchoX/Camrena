@@ -46,9 +46,9 @@ public class GalleryActivity extends AppCompatActivity {
         imageList = realm.where(GalleryObject.class).findAll();
 
         galleryRecyclerView = (RecyclerView)findViewById(R.id.gallery_recyclerview);
-        galleryRecyclerView.setHasFixedSize(true);
+        //galleryRecyclerView.setHasFixedSize(true);
 
-        gridLayoutManager = new StaggeredGridLayoutManager(2, 1);
+        gridLayoutManager = new StaggeredGridLayoutManager(4, 1);
         galleryRecyclerView.setLayoutManager(gridLayoutManager);
 
         galleryAdapter = new GalleryAdapter(this,imageList);
