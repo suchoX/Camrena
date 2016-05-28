@@ -12,8 +12,12 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
+import com.kinvey.android.Client;
+import com.kinvey.android.callback.KinveyPingCallback;
 import com.sucho.camrena.adapters.GalleryAdapter;
+import com.sucho.camrena.others.Constants;
 import com.sucho.camrena.realm.GalleryObject;
+import com.sucho.camrena.service.UploadService;
 
 import java.io.File;
 
@@ -43,6 +47,8 @@ public class GalleryActivity extends AppCompatActivity {
         realm = Realm.getInstance(realmConfig);
         initToolbar();
 
+        startUploadService();
+
         galleryList = realm.where(GalleryObject.class).findAll();
 
         //Log.e(TAG,""+realm.where(GalleryObject.class).equalTo("isimage",false).findAll().size());
@@ -56,6 +62,11 @@ public class GalleryActivity extends AppCompatActivity {
         galleryAdapter = new GalleryAdapter(this,galleryList);
         galleryRecyclerView.setAdapter(galleryAdapter);
 
+    }
+
+    private void startUploadService()
+    {
+        startService(new Intent(getBaseContext(), UploadService.class));
     }
 
     private void initToolbar() {
