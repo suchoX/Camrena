@@ -59,6 +59,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     SurfaceHolder videoHolder;
     boolean recording = false,recorderPrep=false,recorderPreped=false,surfaceCreated=false;
     int surfaceWidth,surfaceHeight;
+    String videoPath;
 
     Realm realm;
     RealmConfiguration realmConfig;
@@ -149,6 +150,18 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
                     photoCapture.setVisibility(View.VISIBLE);
                     videoCapture.setVisibility(View.VISIBLE);
                     swapCamera.setVisibility(View.VISIBLE);
+                    gallery.setVisibility(View.VISIBLE);
+
+                    GalleryObject galleryObject = new GalleryObject();
+                    realm.beginTransaction();
+                    galleryObject.setId(realm.where(GalleryObject.class).findAll().size()+1);
+                    galleryObject.setPath(videoPath);
+                    galleryObject.setImage(false);
+                    galleryObject.setLocal(true);
+                    galleryObject.setSynced(false);
+                    realm.copyToRealmOrUpdate(galleryObject);
+                    realm.commitTransaction();
+
                 }
             }
         });
@@ -330,6 +343,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         photoCapture.setVisibility(View.GONE);
         videoCapture.setVisibility(View.GONE);
         swapCamera.setVisibility(View.GONE);
+        gallery.setVisibility(View.GONE);
         cameraPreviewFrame.removeAllViews();
         videoView.setVisibility(View.VISIBLE);
         stopRecord.setVisibility(View.VISIBLE);
@@ -358,7 +372,8 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         Log.e(TAG,imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4");
-        recorder.setOutputFile(imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4");
+        videoPath = imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4";
+        recorder.setOutputFile(videoPath);
 
         recorderPrep = true;
 

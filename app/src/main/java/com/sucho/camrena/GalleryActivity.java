@@ -29,7 +29,7 @@ public class GalleryActivity extends AppCompatActivity {
 
     Realm realm;
     RealmConfiguration realmConfig;
-    RealmResults<GalleryObject> imageList;
+    RealmResults<GalleryObject> galleryList;
 
     RecyclerView galleryRecyclerView;
     private StaggeredGridLayoutManager gridLayoutManager;
@@ -43,15 +43,17 @@ public class GalleryActivity extends AppCompatActivity {
         realm = Realm.getInstance(realmConfig);
         initToolbar();
 
-        imageList = realm.where(GalleryObject.class).findAll();
+        galleryList = realm.where(GalleryObject.class).findAll();
+
+        //Log.e(TAG,""+realm.where(GalleryObject.class).equalTo("isimage",false).findAll().size());
 
         galleryRecyclerView = (RecyclerView)findViewById(R.id.gallery_recyclerview);
-        //galleryRecyclerView.setHasFixedSize(true);
+        galleryRecyclerView.setHasFixedSize(true);
 
-        gridLayoutManager = new StaggeredGridLayoutManager(4, 1);
+        gridLayoutManager = new StaggeredGridLayoutManager(4,StaggeredGridLayoutManager.VERTICAL);
         galleryRecyclerView.setLayoutManager(gridLayoutManager);
 
-        galleryAdapter = new GalleryAdapter(this,imageList);
+        galleryAdapter = new GalleryAdapter(this,galleryList);
         galleryRecyclerView.setAdapter(galleryAdapter);
 
     }

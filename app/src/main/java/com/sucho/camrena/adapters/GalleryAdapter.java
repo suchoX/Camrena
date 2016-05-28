@@ -26,13 +26,13 @@ import io.realm.RealmResults;
  */
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
 {
-    private RealmResults<GalleryObject> imageList;
+    private RealmResults<GalleryObject> galleryList;
     private Context context;
 
-    public GalleryAdapter(Context context, RealmResults<GalleryObject> imageList)
+    public GalleryAdapter(Context context, RealmResults<GalleryObject> galleryList)
     {
         this.context = context;
-        this.imageList = imageList;
+        this.galleryList = galleryList;
     }
     @Override
     public GalleryObjectHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -44,7 +44,10 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
     @Override
     public void onBindViewHolder(GalleryObjectHolder holder, int position)
     {
-        new showImage(holder.imageView).execute(imageList.get(position).getPath());
+        if(galleryList.get(position).isImage())
+            new showImage(holder.imageView,galleryList.get(position).isImage(),galleryList.get(position).getPath()).execute();
+        else
+            new showImage(holder.imageView,galleryList.get(position).isImage(),R.drawable.video_default).execute();
     }
 
     @Override
@@ -59,19 +62,34 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
 
     @Override
     public int getItemCount() {
-        return this.imageList.size();
+        return this.galleryList.size();
     }
 
-    class showImage extends AsyncTask<String, Void, Bitmap>
+    class showImage extends AsyncTask<Void, Void, Bitmap>
     {
         ImageView imageView;
-        showImage(ImageView imageView)
+        boolean isImage;
+        int imgId;
+        String path;
+        showImage(ImageView imageView,boolean isImage,String path)
         {
             this.imageView = imageView;
+            this.isImage = isImage;
+            this.path = path;
+        }
+        showImage(ImageView imageView,boolean isImage,int imgId)
+        {
+            this.imageView = imageView;
+            this.isImage = isImage;
+            this.imgId = imgId;
         }
         @Override
-        protected Bitmap doInBackground(String... params) {
-            Bitmap imageBitmap = decodeAndScale(params[0]);
+        protected Bitmap doInBackground(Void... params) {
+            Bitmap imageBitmap;
+            if(isImage)
+                imageBitmap = decodeAndScale(path);
+            else
+                imageBitmap = decodeAndScale(imgId);
             return imageBitmap;
         }
 
@@ -97,6 +115,25 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
 
             options.inJustDecodeBounds = false;
             return BitmapFactory.decodeFile(path,options);
+
+        }
+        private Bitmap decodeAndScale(int imgId) {
+
+            int reqWidth,reqHeight;
+            reqWidth = getScreenWidth((Activity)context)/4;
+
+            // First decode with inJustDecodeBounds=true to check dimensions
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeResource(context.getResources(),imgId,options);
+            reqHeight = getImageHeight(options,reqWidth);
+            Log.e("GalleryAdapter",""+options.outWidth+" "+options.outHeight);
+            Log.e("GalleryAdapter",""+reqWidth+" "+reqHeight);
+
+            options.inSampleSize = getSampleSize(options, reqWidth, reqHeight);
+
+            options.inJustDecodeBounds = false;
+            return BitmapFactory.decodeResource(context.getResources(),imgId,options);
 
         }
 
@@ -131,9 +168,9 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
         display.getMetrics(outMetrics);
 
         float density = a.getResources().getDisplayMetrics().density;
-        float dpWidth = outMetrics.widthPixels / density;
+        float dpHeight = outMetrics.heightPixels / density;
 
-        return (int) dpWidth;
+        return (int) dpHeight;
     }
 
     private int getImageHeight(BitmapFactory.Options options,int width)
