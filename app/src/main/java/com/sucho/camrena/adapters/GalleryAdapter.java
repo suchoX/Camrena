@@ -44,6 +44,10 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
     @Override
     public void onBindViewHolder(GalleryObjectHolder holder, int position)
     {
+        holder.path = galleryList.get(position).getPath();
+        holder.isimage = galleryList.get(position).isImage();
+        holder.local = galleryList.get(position).isLocal();
+        holder.local = galleryList.get(position).isSynced();
         if(galleryList.get(position).isImage())
             new showImage(holder.imageView,galleryList.get(position).isImage(),galleryList.get(position).getPath()).execute();
         else
@@ -127,8 +131,6 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
             options.inJustDecodeBounds = true;
             BitmapFactory.decodeResource(context.getResources(),imgId,options);
             reqHeight = getImageHeight(options,reqWidth);
-            Log.e("GalleryAdapter",""+options.outWidth+" "+options.outHeight);
-            Log.e("GalleryAdapter",""+reqWidth+" "+reqHeight);
 
             options.inSampleSize = getSampleSize(options, reqWidth, reqHeight);
 
