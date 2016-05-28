@@ -47,7 +47,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
         holder.path = galleryList.get(position).getPath();
         holder.isimage = galleryList.get(position).isImage();
         holder.local = galleryList.get(position).isLocal();
-        holder.local = galleryList.get(position).isSynced();
+        holder.synced = galleryList.get(position).isSynced();
         if(galleryList.get(position).isImage())
             new showImage(holder.imageView,galleryList.get(position).isImage(),galleryList.get(position).getPath()).execute();
         else

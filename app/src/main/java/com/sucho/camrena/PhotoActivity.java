@@ -30,6 +30,7 @@ import android.widget.Toast;
 
 import com.sucho.camrena.customview.CameraPreview;
 import com.sucho.camrena.realm.GalleryObject;
+import com.sucho.camrena.service.UploadService;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -59,10 +60,11 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     SurfaceHolder videoHolder;
     boolean recording = false,recorderPrep=false,recorderPreped=false,surfaceCreated=false;
     int surfaceWidth,surfaceHeight;
-    String videoPath;
+    String videoPath,videoName;
 
     Realm realm;
     RealmConfiguration realmConfig;
+
 
     Camera.PictureCallback captureCallback = new Camera.PictureCallback()
     {
@@ -88,6 +90,8 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        startUploadService();
 
         realmConfig = new RealmConfiguration.Builder(this).build();
         realm = Realm.getInstance(realmConfig);
@@ -154,7 +158,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
                     GalleryObject galleryObject = new GalleryObject();
                     realm.beginTransaction();
-                    galleryObject.setId(realm.where(GalleryObject.class).findAll().size()+1);
+                    galleryObject.setId(videoName);
                     galleryObject.setPath(videoPath);
                     galleryObject.setImage(false);
                     galleryObject.setLocal(true);
@@ -328,7 +332,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         protected void onPostExecute(Void result) {
             GalleryObject galleryObject = new GalleryObject();
             realm.beginTransaction();
-            galleryObject.setId(realm.where(GalleryObject.class).findAll().size()+1);
+            galleryObject.setId(imageFile.getName());
             galleryObject.setPath(imageFile.getAbsolutePath());
             galleryObject.setImage(true);
             galleryObject.setLocal(true);
@@ -373,6 +377,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         Log.e(TAG,imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4");
         videoPath = imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4";
+        videoName = "VIDEO_" + timeStamp + ".mp4";
         recorder.setOutputFile(videoPath);
 
         recorderPrep = true;
@@ -503,5 +508,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             }
         }
         return (result);
+    }
+
+    private void startUploadService()
+    {
+        startService(new Intent(getBaseContext(), UploadService.class));
     }
 }

@@ -9,18 +9,18 @@ import io.realm.annotations.PrimaryKey;
 public class GalleryObject extends RealmObject
 {
     @PrimaryKey
-    int id;
+    String id;
 
     String path;
     boolean isimage;
     boolean synced;
     boolean local;
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 

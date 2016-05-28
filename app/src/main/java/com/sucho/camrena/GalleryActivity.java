@@ -47,8 +47,6 @@ public class GalleryActivity extends AppCompatActivity {
         realm = Realm.getInstance(realmConfig);
         initToolbar();
 
-        startUploadService();
-
         galleryList = realm.where(GalleryObject.class).findAll();
 
         //Log.e(TAG,""+realm.where(GalleryObject.class).equalTo("isimage",false).findAll().size());
@@ -64,10 +62,7 @@ public class GalleryActivity extends AppCompatActivity {
 
     }
 
-    private void startUploadService()
-    {
-        startService(new Intent(getBaseContext(), UploadService.class));
-    }
+
 
     private void initToolbar() {
         mToolbar = (Toolbar) findViewById(R.id.toolbar);

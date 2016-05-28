@@ -16,6 +16,7 @@ import com.sucho.camrena.others.Constants;
 import com.sucho.camrena.realm.GalleryObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -29,6 +30,9 @@ public class UploadService extends Service {
     RealmConfiguration realmConfig;
     RealmResults<GalleryObject> unSyncedList;
     Client mKinveyClient;
+
+    ArrayList<String> uploadedId;
+    int tobeUploaded;
 
     public UploadService()
     {
@@ -44,20 +48,28 @@ public class UploadService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         realmConfig = new RealmConfiguration.Builder(this).build();
         realm = Realm.getInstance(realmConfig);
+
         mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, this.getApplicationContext()).build();
 
-        mKinveyClient.user().login(new KinveyUserCallback() {
-            @Override
-            public void onFailure(Throwable error) {
-                Log.e(TAG, "Login Failure", error);
-                stopSelf();
-            }
-            @Override
-            public void onSuccess(User result) {
-                Log.i(TAG,"Logged in a new implicit user with id: " + result.getId());
-                upload();
-            }
-        });
+        uploadedId = new ArrayList<String>();
+
+        if (mKinveyClient.user().isUserLoggedIn())
+            upload();
+        else {
+            mKinveyClient.user().login(new KinveyUserCallback() {
+                @Override
+                public void onFailure(Throwable error) {
+                    Log.e(TAG, "Login Failure", error);
+                    stopSelf();
+                }
+
+                @Override
+                public void onSuccess(User result) {
+                    Log.i(TAG, "Logged in a new implicit user with id: " + result.getId());
+                    upload();
+                }
+            });
+        }
 
         // Let it continue running until it is stopped.
         return START_STICKY;
@@ -66,24 +78,31 @@ public class UploadService extends Service {
     private void upload()
     {
         unSyncedList = realm.where(GalleryObject.class).equalTo("synced",false).findAll();
-        for(int i=0 ; i<1 ; i++)
+        tobeUploaded = unSyncedList.size();
+        Log.e(TAG,""+tobeUploaded);
+        if(tobeUploaded == 0)
+            stopSelf();
+        for(int i=0 ; i<tobeUploaded ; i++)
         {
-            FileMetaData myFileMetaData = new FileMetaData("myFileID");  //create the FileMetaData object
+            final int num = i;
+            FileMetaData myFileMetaData = new FileMetaData(unSyncedList.get(i).getId());  //create the FileMetaData object
             myFileMetaData.setPublic(true);  //set the file to be pubicly accesible
             java.io.File file = new java.io.File(unSyncedList.get(i).getPath());
-            myFileMetaData.setFileName(file.getName());
+            myFileMetaData.setFileName(unSyncedList.get(i).getId());
             mKinveyClient.file().upload(myFileMetaData, file, new UploaderProgressListener() {
 
                 @Override
                 public void onSuccess(FileMetaData fileMetaData) {
-                    Log.e(TAG,fileMetaData.getFileName());
-                    stopSelf();
+                    Log.e(TAG,"Uploaded:"+fileMetaData.getFileName());
+                    uploadedId.add(fileMetaData.getFileName());
+                    if (num == tobeUploaded-1)
+                        updateRealm();
                 }
 
                 @Override
                 public void onFailure(Throwable error) {
                     Log.e(TAG, "failed to upload file.", error);
-                    stopSelf();
+                    updateRealm();
                 }
                 @Override
                 public void progressChanged(MediaHttpUploader uploader) throws IOException {
@@ -92,6 +111,19 @@ public class UploadService extends Service {
                 }
             });
         }
+    }
+
+    private void updateRealm()
+    {
+        GalleryObject galleryObject;
+        for(int i=0 ; i<uploadedId.size() ; i++)
+        {
+            realm.beginTransaction();
+            galleryObject = realm.where(GalleryObject.class).equalTo("id",uploadedId.get(i)).findFirst();
+            galleryObject.setSynced(true);
+            realm.commitTransaction();
+        }
+        stopSelf();
     }
 
     @Override

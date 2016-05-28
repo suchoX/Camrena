@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -32,6 +33,8 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
     ImageView dialogImage;
     VideoView dialogVideo;
 
+    ImageView syncedImage;
+
     public GalleryObjectHolder(View itemView) {
         super(itemView);
         itemView.setOnClickListener(this);
@@ -51,6 +54,13 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
             Bitmap bmp = BitmapFactory.decodeFile(path);
             dialogImage.setImageBitmap(bmp);
             popupDialog.setView(imageViewDialog);
+            syncedImage = (ImageView)imageViewDialog.findViewById(R.id.synced);
+            if(synced) {
+                syncedImage.setVisibility(View.VISIBLE);
+                Log.e("HOLDER","Synced");
+            }
+            else
+                syncedImage.setVisibility(View.GONE);
 
         }
         else
