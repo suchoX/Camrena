@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.nfc.Tag;
 import android.os.AsyncTask;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
@@ -14,9 +15,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.kinvey.android.Client;
+import com.kinvey.android.callback.KinveyUserCallback;
+import com.kinvey.java.Query;
+import com.kinvey.java.User;
+import com.kinvey.java.core.DownloaderProgressListener;
+import com.kinvey.java.core.KinveyClientCallback;
+import com.kinvey.java.core.MediaHttpDownloader;
+import com.kinvey.java.model.FileMetaData;
+import com.squareup.picasso.Picasso;
 import com.sucho.camrena.R;
+import com.sucho.camrena.others.Constants;
 import com.sucho.camrena.others.GalleryObjectHolder;
 import com.sucho.camrena.realm.GalleryObject;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 import io.realm.RealmList;
 import io.realm.RealmResults;
@@ -26,8 +41,11 @@ import io.realm.RealmResults;
  */
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
 {
+    private static final String TAG = "GalleryAdapter";
     private RealmResults<GalleryObject> galleryList;
     private Context context;
+
+    Client mKinveyClient;
 
     public GalleryAdapter(Context context, RealmResults<GalleryObject> galleryList)
     {
@@ -44,12 +62,13 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
     @Override
     public void onBindViewHolder(GalleryObjectHolder holder, int position)
     {
+        holder.id = galleryList.get(position).getId();
         holder.path = galleryList.get(position).getPath();
         holder.isimage = galleryList.get(position).isImage();
         holder.local = galleryList.get(position).isLocal();
         holder.synced = galleryList.get(position).isSynced();
         if(galleryList.get(position).isImage())
-            new showImage(holder.imageView,galleryList.get(position).isImage(),galleryList.get(position).getPath()).execute();
+            new showImage(holder.imageView,galleryList.get(position).isImage(),galleryList.get(position).getPath(),galleryList.get(position).getId()).execute();
         else
             new showImage(holder.imageView,galleryList.get(position).isImage(),R.drawable.video_default).execute();
     }
@@ -73,27 +92,37 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
     {
         ImageView imageView;
         boolean isImage;
-        int imgId;
+        int imgResId;
         String path;
-        showImage(ImageView imageView,boolean isImage,String path)
+        String imgId;
+        showImage(ImageView imageView,boolean isImage,String path,String imgId)
         {
             this.imageView = imageView;
             this.isImage = isImage;
             this.path = path;
+            this.imgId = imgId;
         }
-        showImage(ImageView imageView,boolean isImage,int imgId)
+        showImage(ImageView imageView,boolean isImage,int imgResId)
         {
             this.imageView = imageView;
             this.isImage = isImage;
-            this.imgId = imgId;
+            this.imgResId = imgResId;
         }
         @Override
         protected Bitmap doInBackground(Void... params) {
             Bitmap imageBitmap;
-            if(isImage)
-                imageBitmap = decodeAndScale(path);
+            if(isImage) {
+                File file = new File(path);
+                if(file.exists())
+                    imageBitmap = decodeAndScale(path);
+                else {
+                    imageBitmap = decodeAndScale(R.drawable.image_default);
+                    loginCheck(imgId,imageView);
+                }
+
+            }
             else
-                imageBitmap = decodeAndScale(imgId);
+                imageBitmap = decodeAndScale(imgResId);
             return imageBitmap;
         }
 
@@ -121,7 +150,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
             return BitmapFactory.decodeFile(path,options);
 
         }
-        private Bitmap decodeAndScale(int imgId) {
+        private Bitmap decodeAndScale(int imgResId) {
 
             int reqWidth,reqHeight;
             reqWidth = getScreenWidth((Activity)context)/4;
@@ -129,13 +158,13 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
             // First decode with inJustDecodeBounds=true to check dimensions
             final BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true;
-            BitmapFactory.decodeResource(context.getResources(),imgId,options);
+            BitmapFactory.decodeResource(context.getResources(),imgResId,options);
             reqHeight = getImageHeight(options,reqWidth);
 
             options.inSampleSize = getSampleSize(options, reqWidth, reqHeight);
 
             options.inJustDecodeBounds = false;
-            return BitmapFactory.decodeResource(context.getResources(),imgId,options);
+            return BitmapFactory.decodeResource(context.getResources(),imgResId,options);
 
         }
 
@@ -182,5 +211,40 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
         height =(int)(imageRatio*width);
 
         return height;
+    }
+
+    private void loginCheck(final String imgId, final ImageView imageView)
+    {
+        mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, context.getApplicationContext()).build();
+        if (mKinveyClient.user().isUserLoggedIn())
+            downloadDeletedImage(imgId,imageView);
+        else {
+            mKinveyClient.user().login(new KinveyUserCallback() {
+                @Override
+                public void onFailure(Throwable error) {
+                }
+
+                @Override
+                public void onSuccess(User result) {
+                    downloadDeletedImage(imgId,imageView);
+                }
+            });
+        }
+    }
+
+    private void downloadDeletedImage(String imgId, final ImageView imageView)
+    {
+       mKinveyClient.file().downloadMetaData(imgId, new KinveyClientCallback<FileMetaData>() {
+           @Override
+           public void onSuccess(FileMetaData fileMetaData) {
+               Log.e(TAG,fileMetaData.getDownloadURL());
+               Picasso.with(context).load(fileMetaData.getDownloadURL()).fit().centerCrop().placeholder(R.drawable.image_default).into(imageView);
+           }
+
+           @Override
+           public void onFailure(Throwable throwable) {
+
+           }
+       });
     }
 }

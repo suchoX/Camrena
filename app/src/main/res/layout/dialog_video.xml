@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:gravity="center">
+    android:layout_height="wrap_content">
     <VideoView
         android:id="@+id/dialog_video"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-</LinearLayout>
+    <ImageView
+        android:id="@+id/synced"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/synced"
+        android:layout_alignParentRight="true"
+        android:layout_margin="10dp"
+        android:visibility="gone"/>
+
+</RelativeLayout>

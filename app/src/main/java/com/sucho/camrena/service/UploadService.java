@@ -18,6 +18,8 @@ import com.sucho.camrena.realm.GalleryObject;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import javax.security.auth.login.LoginException;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -32,7 +34,7 @@ public class UploadService extends Service {
     Client mKinveyClient;
 
     ArrayList<String> uploadedId;
-    int tobeUploaded;
+    int tobeUploaded,count=0;
 
     public UploadService()
     {
@@ -77,39 +79,49 @@ public class UploadService extends Service {
 
     private void upload()
     {
-        unSyncedList = realm.where(GalleryObject.class).equalTo("synced",false).findAll();
-        tobeUploaded = unSyncedList.size();
-        Log.e(TAG,""+tobeUploaded);
-        if(tobeUploaded == 0)
-            stopSelf();
-        for(int i=0 ; i<tobeUploaded ; i++)
-        {
-            final int num = i;
-            FileMetaData myFileMetaData = new FileMetaData(unSyncedList.get(i).getId());  //create the FileMetaData object
-            myFileMetaData.setPublic(true);  //set the file to be pubicly accesible
-            java.io.File file = new java.io.File(unSyncedList.get(i).getPath());
-            myFileMetaData.setFileName(unSyncedList.get(i).getId());
-            mKinveyClient.file().upload(myFileMetaData, file, new UploaderProgressListener() {
+        try {
 
-                @Override
-                public void onSuccess(FileMetaData fileMetaData) {
-                    Log.e(TAG,"Uploaded:"+fileMetaData.getFileName());
-                    uploadedId.add(fileMetaData.getFileName());
-                    if (num == tobeUploaded-1)
+            unSyncedList = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).findAll();
+            tobeUploaded = unSyncedList.size();
+            Log.e(TAG, "" + tobeUploaded);
+            if (tobeUploaded == 0)
+                stopSelf();
+            for (int i = 0; i < tobeUploaded; i++) {
+                FileMetaData myFileMetaData = new FileMetaData(unSyncedList.get(i).getId());  //create the FileMetaData object
+                myFileMetaData.setPublic(true);  //set the file to be pubicly accesible
+                java.io.File file = new java.io.File(unSyncedList.get(i).getPath());
+                myFileMetaData.setFileName(unSyncedList.get(i).getId());
+                mKinveyClient.file().upload(myFileMetaData, file, new UploaderProgressListener() {
+
+                    @Override
+                    public void onSuccess(FileMetaData fileMetaData) {
+                        Log.e(TAG, "Uploaded:" + fileMetaData.getFileName());
+                        uploadedId.add(fileMetaData.getFileName());
+                        if (count == tobeUploaded - 1) {
+                            updateRealm();
+                            Log.e(TAG, "Count " + count);
+                        } else
+                            count++;
+                    }
+
+                    @Override
+                    public void onFailure(Throwable error) {
+                        Log.e(TAG, "failed to upload file.", error);
                         updateRealm();
-                }
+                    }
 
-                @Override
-                public void onFailure(Throwable error) {
-                    Log.e(TAG, "failed to upload file.", error);
-                    updateRealm();
-                }
-                @Override
-                public void progressChanged(MediaHttpUploader uploader) throws IOException {
-                    Log.i(TAG, "upload progress: " + uploader.getUploadState());
-                    // all updates to UI widgets need to be done on the UI thread
-                }
-            });
+                    @Override
+                    public void progressChanged(MediaHttpUploader uploader) throws IOException {
+                        Log.i(TAG, "upload progress: " + uploader.getUploadState());
+                        // all updates to UI widgets need to be done on the UI thread
+                    }
+                });
+            }
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+            updateRealm();
+            stopSelf();
         }
     }
 
