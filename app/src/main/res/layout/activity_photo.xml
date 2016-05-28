@@ -52,6 +52,13 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:layout_margin="20dp"/>
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/gallery"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/gallery"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="20dp"/>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/swap_camera"

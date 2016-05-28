@@ -23,6 +23,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private Camera camera;
     Context context;
     int width,height;
+    List<Camera.Size> sizeList;
     
     public CameraPreview(Context context, Camera camera) 
     {
@@ -102,7 +103,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         if(display.getRotation() == Surface.ROTATION_270)
         {
             parameters.setPictureSize(imageSize.width, imageSize.height);
-            camera.setDisplayOrientation(180);
+            camera.setDisplayOrientation(0);
         }
 
         camera.setParameters(parameters);

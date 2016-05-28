@@ -1,6 +1,7 @@
 package com.sucho.camrena;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -28,6 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.sucho.camrena.customview.CameraPreview;
+import com.sucho.camrena.realm.GalleryObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -35,14 +37,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
+
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
 
 public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Callback {
     private static final String TAG = "PhotoActivity";
     private Camera camera;
     private CameraPreview cameraPreview;
     FrameLayout cameraPreviewFrame;
-    FloatingActionButton photoCapture,videoCapture,swapCamera,stopRecord;
+    FloatingActionButton photoCapture,videoCapture,swapCamera,stopRecord,gallery;
     MediaPlayer cameraClick;
 
     int camIdx=0;
@@ -55,6 +59,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     SurfaceHolder videoHolder;
     boolean recording = false,recorderPrep=false,recorderPreped=false,surfaceCreated=false;
     int surfaceWidth,surfaceHeight;
+
+    Realm realm;
+    RealmConfiguration realmConfig;
 
     Camera.PictureCallback captureCallback = new Camera.PictureCallback()
     {
@@ -80,6 +87,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        realmConfig = new RealmConfiguration.Builder(this).build();
+        realm = Realm.getInstance(realmConfig);
+
         initCamera();
         recorder = new MediaRecorder();
         cameraClick = MediaPlayer.create(getApplication(), R.raw.camera_click);
@@ -139,6 +150,15 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
                     videoCapture.setVisibility(View.VISIBLE);
                     swapCamera.setVisibility(View.VISIBLE);
                 }
+            }
+        });
+
+        gallery = (FloatingActionButton)findViewById(R.id.gallery);
+        gallery.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(PhotoActivity.this,GalleryActivity.class));
+                finish();
             }
         });
 
@@ -283,6 +303,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
                 outStream.flush();
                 outStream.close();
                 MediaStore.Images.Media.insertImage(getContentResolver(), imageFile.getAbsolutePath(), imageFile.getName(), imageFile.getName());
+
             }catch (IOException e)
             {
                 e.printStackTrace();
@@ -292,7 +313,15 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         }
         @Override
         protected void onPostExecute(Void result) {
-
+            GalleryObject galleryObject = new GalleryObject();
+            realm.beginTransaction();
+            galleryObject.setId(realm.where(GalleryObject.class).findAll().size()+1);
+            galleryObject.setPath(imageFile.getAbsolutePath());
+            galleryObject.setImage(true);
+            galleryObject.setLocal(true);
+            galleryObject.setSynced(false);
+            realm.copyToRealmOrUpdate(galleryObject);
+            realm.commitTransaction();
         }
     }
 
@@ -323,7 +352,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
                 Log.e(TAG, "Couldn't create Directory");
             }
         }
-        CamcorderProfile cpHigh = CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH);
+        CamcorderProfile cpHigh = CamcorderProfile.get(CamcorderProfile.QUALITY_480P);
         recorder.setProfile(cpHigh);
         Log.e(TAG,"Profile Set");
 
@@ -339,7 +368,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         //setOrientation();
         /*recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);*/
+        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+        Camera.Size size = getBestPreviewSize(surfaceWidth,surfaceHeight, recordCam.getParameters());
+        recorder.setVideoSize(size.width,size.height);*/
         /*recorder.setMaxDuration(50000); // 50 seconds
         recorder.setMaxFileSize(5000000); // Approximately 5 megabytes*/
 
@@ -431,9 +462,12 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
         if(display.getRotation() == Surface.ROTATION_0)
             recordCam.setDisplayOrientation(90);
-
-        if(display.getRotation() == Surface.ROTATION_270)
+        else if(display.getRotation() == Surface.ROTATION_90)
             recordCam.setDisplayOrientation(180);
+        else if(display.getRotation() == Surface.ROTATION_180)
+            recordCam.setDisplayOrientation(270);
+        else if(display.getRotation() == Surface.ROTATION_270)
+            recordCam.setDisplayOrientation(0);
         //recordCam.startPreview();
     }
     private Camera.Size getBestPreviewSize(int width, int height, Camera.Parameters parameters) {
