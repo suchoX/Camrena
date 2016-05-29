@@ -38,6 +38,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import io.realm.Realm;
@@ -304,7 +305,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         return result;
     }
 
-    class imageSave extends AsyncTask<Bitmap, Void, Void>
+    class imageSave extends AsyncTask<Bitmap, Void, ArrayList<String>>
     {
 
         @Override
@@ -313,7 +314,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         }
 
         @Override
-        protected Void doInBackground(Bitmap... params)
+        protected ArrayList<String> doInBackground(Bitmap... params)
         {
             Bitmap bitmapImage = params[0];
             try {
@@ -328,14 +329,18 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
                 e.printStackTrace();
             }
 
-            return null;
+            ArrayList<String> imageDetails = new ArrayList<String>();
+            imageDetails.add(imageFile.getAbsolutePath());
+            imageDetails.add(imageFile.getName());
+
+            return imageDetails;
         }
         @Override
-        protected void onPostExecute(Void result) {
+        protected void onPostExecute(ArrayList<String> imageDetails) {
             GalleryObject galleryObject = new GalleryObject();
             realm.beginTransaction();
-            galleryObject.setId(imageFile.getName());
-            galleryObject.setPath(imageFile.getAbsolutePath());
+            galleryObject.setId(imageDetails.get(1));
+            galleryObject.setPath(imageDetails.get(0));
             galleryObject.setImage(true);
             galleryObject.setLocal(true);
             galleryObject.setSynced(false);
