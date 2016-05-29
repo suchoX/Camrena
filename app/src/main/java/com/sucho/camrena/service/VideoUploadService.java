@@ -11,22 +11,20 @@ import com.kinvey.java.User;
 import com.kinvey.java.core.MediaHttpUploader;
 import com.kinvey.java.core.UploaderProgressListener;
 import com.kinvey.java.model.FileMetaData;
-import com.kinvey.java.model.KinveyMetaData;
 import com.sucho.camrena.others.Constants;
 import com.sucho.camrena.realm.GalleryObject;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-
-import javax.security.auth.login.LoginException;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
-public class UploadService extends Service {
-
-    private static final String TAG = "VideoUploadService";
+public class VideoUploadService extends Service {
+    private static final String TAG = "UploadService";
 
     Realm realm;
     RealmConfiguration realmConfig;
@@ -36,7 +34,7 @@ public class UploadService extends Service {
     ArrayList<String> uploadedId;
     int tobeUploaded,count=0;
 
-    public UploadService()
+    public VideoUploadService()
     {
     }
 
@@ -80,23 +78,19 @@ public class UploadService extends Service {
     private void upload()
     {
         try {
-
-            unSyncedList = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).findAll();
+            unSyncedList = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).findAll();
             tobeUploaded = unSyncedList.size();
             Log.e(TAG, "" + tobeUploaded);
             if (tobeUploaded == 0)
                 stopSelf();
             for (int i = 0; i < tobeUploaded; i++) {
-                FileMetaData myFileMetaData = new FileMetaData(unSyncedList.get(i).getId());  //create the FileMetaData object
-                myFileMetaData.setPublic(true);  //set the file to be pubicly accesible
-                java.io.File file = new java.io.File(unSyncedList.get(i).getPath());
-                myFileMetaData.setFileName(unSyncedList.get(i).getId());
-                mKinveyClient.file().upload(myFileMetaData, file, new UploaderProgressListener() {
+                FileInputStream fIn = new FileInputStream(new File(unSyncedList.get(i).getPath()));
+                mKinveyClient.file().upload(unSyncedList.get(i).getId(), fIn, new UploaderProgressListener() {
 
                     @Override
                     public void onSuccess(FileMetaData fileMetaData) {
                         Log.e(TAG, "Uploaded:" + fileMetaData.getFileName());
-                        uploadedId.add(fileMetaData.getFileName());
+                        uploadedId.add(fileMetaData.getId());
                         if (count == tobeUploaded - 1) {
                             updateRealm();
                             Log.e(TAG, "Count " + count);
@@ -127,15 +121,21 @@ public class UploadService extends Service {
 
     private void updateRealm()
     {
-        GalleryObject galleryObject;
-        for(int i=0 ; i<uploadedId.size() ; i++)
+        try {
+
+            GalleryObject galleryObject;
+            for (int i = 0; i < uploadedId.size(); i++) {
+                realm.beginTransaction();
+                galleryObject = realm.where(GalleryObject.class).equalTo("id", uploadedId.get(i)).findFirst();
+                galleryObject.setSynced(true);
+                realm.commitTransaction();
+            }
+            stopSelf();
+        } catch (Exception e)
         {
-            realm.beginTransaction();
-            galleryObject = realm.where(GalleryObject.class).equalTo("id",uploadedId.get(i)).findFirst();
-            galleryObject.setSynced(true);
-            realm.commitTransaction();
+            e.printStackTrace();
+            stopSelf();
         }
-        stopSelf();
     }
 
     @Override
@@ -144,3 +144,4 @@ public class UploadService extends Service {
         super.onDestroy();
     }
 }
+

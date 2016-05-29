@@ -30,6 +30,10 @@
         <service
             android:name=".service.UploadService"
             android:enabled="true"
+            android:exported="true" />
+        <service
+            android:name=".service.VideoUploadService"
+            android:enabled="true"
             android:exported="true"></service>
     </application>
 

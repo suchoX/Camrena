@@ -31,6 +31,7 @@ import android.widget.Toast;
 import com.sucho.camrena.customview.CameraPreview;
 import com.sucho.camrena.realm.GalleryObject;
 import com.sucho.camrena.service.UploadService;
+import com.sucho.camrena.service.VideoUploadService;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -513,6 +514,6 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void startUploadService()
     {
-        startService(new Intent(getBaseContext(), UploadService.class));
+        startService(new Intent(getBaseContext(), VideoUploadService.class));
     }
 }
