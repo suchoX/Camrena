@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
@@ -36,7 +37,7 @@ public class GalleryActivity extends AppCompatActivity {
     RealmResults<GalleryObject> galleryList;
 
     RecyclerView galleryRecyclerView;
-    private StaggeredGridLayoutManager gridLayoutManager;
+    private GridLayoutManager gridLayoutManager;
     GalleryAdapter galleryAdapter;
 
     @Override
@@ -54,7 +55,7 @@ public class GalleryActivity extends AppCompatActivity {
         galleryRecyclerView = (RecyclerView)findViewById(R.id.gallery_recyclerview);
         galleryRecyclerView.setHasFixedSize(true);
 
-        gridLayoutManager = new StaggeredGridLayoutManager(4,StaggeredGridLayoutManager.VERTICAL);
+        gridLayoutManager = new GridLayoutManager(this,4);
         galleryRecyclerView.setLayoutManager(gridLayoutManager);
 
         galleryAdapter = new GalleryAdapter(this,galleryList);

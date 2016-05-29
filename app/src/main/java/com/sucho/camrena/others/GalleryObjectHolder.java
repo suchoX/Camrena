@@ -31,6 +31,7 @@ import java.io.File;
 public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements View.OnClickListener
 {
     public ImageView imageView;
+    public ImageView syncedgalleryImage;
     public String id;
     public String path;
     public boolean isimage;
@@ -54,6 +55,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
         super(itemView);
         itemView.setOnClickListener(this);
         imageView = (ImageView)itemView.findViewById(R.id.image);
+        syncedgalleryImage = (ImageView)itemView.findViewById(R.id.synced_gallery);
     }
 
     @Override
