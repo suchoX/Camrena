@@ -514,6 +514,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void startUploadService()
     {
+        startService(new Intent(getBaseContext(), UploadService.class));
         startService(new Intent(getBaseContext(), VideoUploadService.class));
     }
 }

@@ -24,7 +24,7 @@ import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
 public class VideoUploadService extends Service {
-    private static final String TAG = "UploadService";
+    private static final String TAG = "VideoUploadService";
 
     Realm realm;
     RealmConfiguration realmConfig;

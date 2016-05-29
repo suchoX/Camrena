@@ -3,6 +3,7 @@ package com.sucho.camrena.others;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -42,7 +43,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
     ImageView dialogImage;
     VideoView dialogVideo;
 
-    ImageView syncedImage;
+    ImageView syncedImage,storageImage;
 
     Client mKinveyClient;
 
@@ -64,6 +65,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
 
             dialogImage = (ImageView) imageViewDialog.findViewById(R.id.dialog_image);
             syncedImage = (ImageView)imageViewDialog.findViewById(R.id.synced);
+            storageImage = (ImageView)imageViewDialog.findViewById(R.id.storage_location);
 
             File file = new File(path);
             if(file.exists())
@@ -74,6 +76,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
             }
             else {
                 loginCheck(id,dialogImage,view);
+                storageImage.setImageDrawable(ContextCompat.getDrawable(view.getContext(),R.drawable.cloud));
                 popupDialog.setView(imageViewDialog);
             }
 
@@ -89,6 +92,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
 
             videoViewDialog = factory.inflate(R.layout.dialog_video,null);
             syncedImage = (ImageView)videoViewDialog.findViewById(R.id.synced);
+            storageImage = (ImageView)videoViewDialog.findViewById(R.id.storage_location);
             if(synced)
                 syncedImage.setVisibility(View.VISIBLE);
             else

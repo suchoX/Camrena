@@ -13,11 +13,17 @@
 
     <ImageView
         android:id="@+id/synced"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:src="@drawable/synced"
         android:layout_alignParentRight="true"
-        android:layout_margin="10dp"
-        android:visibility="gone"/>
+        android:layout_margin="10dp"/>
+    <ImageView
+        android:id="@+id/storage_location"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:src="@drawable/local"
+        android:layout_toLeftOf="@+id/synced"
+        android:layout_margin="10dp"/>
 
 </RelativeLayout>
