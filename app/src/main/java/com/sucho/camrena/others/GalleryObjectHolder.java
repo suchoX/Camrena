@@ -3,6 +3,7 @@ package com.sucho.camrena.others;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
@@ -11,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.MediaController;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.kinvey.android.Client;
@@ -42,6 +44,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
     View videoViewDialog;
     ImageView dialogImage;
     VideoView dialogVideo;
+    boolean canPlay = false;
 
     ImageView syncedImage,storageImage;
 
@@ -54,7 +57,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
     }
 
     @Override
-    public void onClick(View view)
+    public void onClick(final View view)
     {
         tempBuilder=new AlertDialog.Builder(view.getContext());
         popupDialog=tempBuilder.create();
@@ -88,8 +91,6 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
         }
         else
         {
-
-
             videoViewDialog = factory.inflate(R.layout.dialog_video,null);
             syncedImage = (ImageView)videoViewDialog.findViewById(R.id.synced);
             storageImage = (ImageView)videoViewDialog.findViewById(R.id.storage_location);
@@ -100,13 +101,39 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
 
             dialogVideo = (VideoView)videoViewDialog.findViewById(R.id.dialog_video);
             popupDialog.setView(videoViewDialog);
-            dialogVideo.setVideoPath(path);
 
-            MediaController controller = new MediaController(view.getContext());
-            controller.setAnchorView(this.dialogVideo);
-            controller.setMediaPlayer(this.dialogVideo);
-            dialogVideo.setMediaController(controller);
-            dialogVideo.start();
+            File file = new File(path);
+            if(file.exists()) {
+                canPlay = true;
+                dialogVideo.setVideoPath(path);
+
+                MediaController controller = new MediaController(view.getContext());
+                controller.setAnchorView(this.dialogVideo);
+                controller.setMediaPlayer(this.dialogVideo);
+                dialogVideo.setMediaController(controller);
+                dialogVideo.start();
+            }
+            else
+            {
+                storageImage.setImageDrawable(ContextCompat.getDrawable(view.getContext(),R.drawable.cloud));
+                mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, view.getContext().getApplicationContext()).build();
+                if (mKinveyClient.user().isUserLoggedIn())
+                    playVideoStream(id,dialogVideo);
+                else {
+                    mKinveyClient.user().login(new KinveyUserCallback() {
+                        @Override
+                        public void onFailure(Throwable error) {
+                            Toast.makeText(view.getContext(),"Cannot Play Video",Toast.LENGTH_LONG).show();
+                        }
+
+                        @Override
+                        public void onSuccess(User result) {
+                            Log.i("Holder", "Logged in a new implicit user with id: " + result.getId());
+                            playVideoStream(id,dialogVideo);
+                        }
+                    });
+                }
+            }
         }
         popupDialog.setCancelable(true);
         popupDialog.show();
@@ -138,7 +165,24 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
         mKinveyClient.file().downloadMetaData(imgId, new KinveyClientCallback<FileMetaData>() {
             @Override
             public void onSuccess(FileMetaData fileMetaData) {
-                Picasso.with(view.getContext()).load(fileMetaData.getDownloadURL()).fit().centerCrop().placeholder(R.drawable.image_default).into(imageView);
+                Picasso.with(view.getContext()).load(fileMetaData.getDownloadURL()).fit().centerCrop().placeholder(R.drawable.image_default).error(R.drawable.image_error).into(imageView);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                Picasso.with(view.getContext()).load(R.drawable.image_error).fit().centerCrop().placeholder(R.drawable.image_default).into(imageView);
+            }
+        });
+    }
+
+    private void playVideoStream(String id,final VideoView videoView)
+    {
+        mKinveyClient.file().downloadMetaData(id, new KinveyClientCallback<FileMetaData>() {
+            @Override
+            public void onSuccess(FileMetaData fileMetaData) {
+                Log.e("Holder",fileMetaData.getDownloadURL());
+                videoView.setVideoURI(Uri.parse(fileMetaData.getDownloadURL()));
+                videoView.start();
             }
 
             @Override

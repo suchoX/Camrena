@@ -93,10 +93,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        startUploadService();
-
         realmConfig = new RealmConfiguration.Builder(this).build();
         realm = Realm.getInstance(realmConfig);
+
+        startUploadService();
 
         initCamera();
         recorder = new MediaRecorder();
@@ -514,7 +514,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void startUploadService()
     {
-        startService(new Intent(getBaseContext(), UploadService.class));
-        startService(new Intent(getBaseContext(), VideoUploadService.class));
+        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0)
+            startService(new Intent(getBaseContext(), UploadService.class));
+        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).equalTo("local",true).findAll().size()>0)
+            startService(new Intent(getBaseContext(), VideoUploadService.class));
     }
 }

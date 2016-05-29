@@ -34,6 +34,7 @@ public class UploadService extends Service {
     Client mKinveyClient;
 
     ArrayList<String> uploadedId;
+    ArrayList<String> avoidUpload;
     int tobeUploaded,count=0;
 
     public UploadService()
@@ -54,7 +55,7 @@ public class UploadService extends Service {
         mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, this.getApplicationContext()).build();
 
         uploadedId = new ArrayList<String>();
-
+        avoidUpload = new ArrayList<String>();
         if (mKinveyClient.user().isUserLoggedIn())
             upload();
         else {
@@ -81,16 +82,28 @@ public class UploadService extends Service {
     {
         try {
 
-            unSyncedList = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).findAll();
+            unSyncedList = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll();
             tobeUploaded = unSyncedList.size();
             Log.e(TAG, "" + tobeUploaded);
             if (tobeUploaded == 0)
                 stopSelf();
-            for (int i = 0; i < tobeUploaded; i++) {
+            for (int i = 0; i < tobeUploaded; i++)
+            {
                 FileMetaData myFileMetaData = new FileMetaData(unSyncedList.get(i).getId());  //create the FileMetaData object
                 myFileMetaData.setPublic(true);  //set the file to be pubicly accesible
-                java.io.File file = new java.io.File(unSyncedList.get(i).getPath());
                 myFileMetaData.setFileName(unSyncedList.get(i).getId());
+                java.io.File file = new java.io.File(unSyncedList.get(i).getPath());
+                if(!file.exists())
+                {
+                    Log.e(TAG,unSyncedList.get(i).getId()+" deleted(Not Synced");
+                    avoidUpload.add(unSyncedList.get(i).getId());
+                    if(i==tobeUploaded-1) {
+                        updateRealm();
+                        break;
+                    }
+                    else
+                        continue;
+                }
                 mKinveyClient.file().upload(myFileMetaData, file, new UploaderProgressListener() {
 
                     @Override
@@ -133,6 +146,14 @@ public class UploadService extends Service {
             realm.beginTransaction();
             galleryObject = realm.where(GalleryObject.class).equalTo("id",uploadedId.get(i)).findFirst();
             galleryObject.setSynced(true);
+            realm.commitTransaction();
+        }
+
+        for(int i=0 ; i<avoidUpload.size() ; i++)
+        {
+            realm.beginTransaction();
+            galleryObject = realm.where(GalleryObject.class).equalTo("id",avoidUpload.get(i)).findFirst();
+            galleryObject.setLocal(false);
             realm.commitTransaction();
         }
         stopSelf();

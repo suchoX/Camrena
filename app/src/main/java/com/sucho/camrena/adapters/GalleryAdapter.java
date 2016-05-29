@@ -237,13 +237,12 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
        mKinveyClient.file().downloadMetaData(imgId, new KinveyClientCallback<FileMetaData>() {
            @Override
            public void onSuccess(FileMetaData fileMetaData) {
-               Log.e(TAG,fileMetaData.getDownloadURL());
                Picasso.with(context).load(fileMetaData.getDownloadURL()).fit().centerCrop().placeholder(R.drawable.image_default).into(imageView);
            }
 
            @Override
            public void onFailure(Throwable throwable) {
-
+               Picasso.with(context).load(R.drawable.image_error).fit().centerCrop().placeholder(R.drawable.image_default).into(imageView);
            }
        });
     }
