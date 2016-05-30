@@ -78,7 +78,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
             //angleToRotate = angleToRotate + 180;
             Bitmap orignalImage = BitmapFactory.decodeByteArray(data, 0, data.length);
-            Bitmap bitmapImage = rotate(orignalImage, angleToRotate);
+            Bitmap bitmapImage = rotate(orignalImage, angleToRotate,camIdx);
             imageFile = getImageFile();
             if (imageFile == null) {
                 return;
@@ -269,11 +269,13 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         return imageFile;
     }
 
-    public static Bitmap rotate(Bitmap bitmap, int degree) {
+    public static Bitmap rotate(Bitmap bitmap, int degree, int cam) {
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
 
         Matrix mtx = new Matrix();
+        if(cam == Camera.CameraInfo.CAMERA_FACING_FRONT)
+            mtx.preScale(1.0f,-1.0f);
         mtx.postRotate(degree);
 
         return Bitmap.createBitmap(bitmap, 0, 0, w, h, mtx, true);
