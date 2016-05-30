@@ -74,9 +74,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
 
-            int angleToRotate = getRoatationAngle(camIdx);
+            int angleToRotate = getRotationAngle(camIdx);
 
-            angleToRotate = angleToRotate + 180;
+            //angleToRotate = angleToRotate + 180;
             Bitmap orignalImage = BitmapFactory.decodeByteArray(data, 0, data.length);
             Bitmap bitmapImage = rotate(orignalImage, angleToRotate);
             imageFile = getImageFile();
@@ -85,6 +85,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             }
             new imageSave().execute(bitmapImage);
             camera.startPreview();
+            photoCapture.setVisibility(View.VISIBLE);
         }
     };
 
@@ -112,6 +113,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             public void onClick(View v) {
                 cameraClick.start();
                 camera.takePicture(null, null, captureCallback);
+                photoCapture.setVisibility(View.INVISIBLE);
             }
         });
 
@@ -277,22 +279,32 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         return Bitmap.createBitmap(bitmap, 0, 0, w, h, mtx, true);
     }
 
-    public int getRoatationAngle(int cameraId) {
+    public int getRotationAngle(int cameraId) {
         android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
         android.hardware.Camera.getCameraInfo(cameraId, info);
         int rotation = getWindowManager().getDefaultDisplay().getRotation();
         int degrees = 0;
         switch (rotation) {
             case Surface.ROTATION_0:
-                degrees = 0;
+                Log.e(TAG,"0 degree");
+                if(cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                    degrees = 180;
+                else
+                    degrees = 0;
                 break;
             case Surface.ROTATION_90:
+                Log.e(TAG,"90 degree");
                 degrees = 90;
                 break;
             case Surface.ROTATION_180:
-                degrees = 180;
+                Log.e(TAG,"180 degree");
+                if(cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                    degrees = 0;
+                else
+                    degrees = 180;
                 break;
             case Surface.ROTATION_270:
+                Log.e(TAG,"270 degree");
                 degrees = 270;
                 break;
         }
@@ -519,10 +531,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void startUploadService()
     {
-        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
+        /*if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
             startService(new Intent(getBaseContext(), UploadService.class));
         if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(VideoUploadService.class))
-            startService(new Intent(getBaseContext(), VideoUploadService.class));
+            startService(new Intent(getBaseContext(), VideoUploadService.class));*/
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
