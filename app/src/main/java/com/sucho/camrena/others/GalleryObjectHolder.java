@@ -32,6 +32,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
 {
     public ImageView imageView;
     public ImageView syncedgalleryImage;
+    public ImageView playOverlayImage;
     public String id;
     public String path;
     public boolean isimage;
@@ -56,6 +57,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
         itemView.setOnClickListener(this);
         imageView = (ImageView)itemView.findViewById(R.id.image);
         syncedgalleryImage = (ImageView)itemView.findViewById(R.id.synced_gallery);
+        playOverlayImage = (ImageView)itemView.findViewById(R.id.play_overlay);
     }
 
     @Override

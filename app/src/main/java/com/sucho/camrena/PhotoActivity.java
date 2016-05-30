@@ -377,7 +377,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
                 Log.e(TAG, "Couldn't create Directory");
             }
         }
-        CamcorderProfile cpHigh = CamcorderProfile.get(CamcorderProfile.QUALITY_480P);
+        CamcorderProfile cpHigh = CamcorderProfile.get(camIdx,CamcorderProfile.QUALITY_480P);
         recorder.setProfile(cpHigh);
         Log.e(TAG,"Profile Set");
 

@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.ThumbnailUtils;
 import android.nfc.Tag;
 import android.os.AsyncTask;
+import android.provider.MediaStore;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -69,10 +71,12 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
         holder.synced = galleryList.get(position).isSynced();
         if(galleryList.get(position).isSynced())
             holder.syncedgalleryImage.setVisibility(View.VISIBLE);
+        if(!galleryList.get(position).isImage())
+            holder.playOverlayImage.setVisibility(View.VISIBLE);
         if(galleryList.get(position).isImage())
             new showImage(holder.imageView,galleryList.get(position).isImage(),galleryList.get(position).getPath(),galleryList.get(position).getId()).execute();
         else
-            new showImage(holder.imageView,galleryList.get(position).isImage(),R.drawable.video_default).execute();
+            new showImage(holder.imageView,galleryList.get(position).isImage(),galleryList.get(position).getPath()).execute();
     }
 
     @Override
@@ -94,7 +98,6 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
     {
         ImageView imageView;
         boolean isImage;
-        int imgResId;
         String path;
         String imgId;
         showImage(ImageView imageView,boolean isImage,String path,String imgId)
@@ -104,11 +107,11 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
             this.path = path;
             this.imgId = imgId;
         }
-        showImage(ImageView imageView,boolean isImage,int imgResId)
+        showImage(ImageView imageView,boolean isImage,String path)
         {
             this.imageView = imageView;
             this.isImage = isImage;
-            this.imgResId = imgResId;
+            this.path = path;
         }
         @Override
         protected Bitmap doInBackground(Void... params) {
@@ -123,8 +126,9 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
                 }
 
             }
-            else
-                imageBitmap = decodeAndScale(imgResId);
+            else {
+                return ThumbnailUtils.createVideoThumbnail(path,   MediaStore.Images.Thumbnails.MINI_KIND);
+            }
             return imageBitmap;
         }
 
