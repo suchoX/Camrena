@@ -75,13 +75,12 @@ public class UploadService extends Service {
         }
 
         // Let it continue running until it is stopped.
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     private void upload()
     {
         try {
-
             unSyncedList = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll();
             tobeUploaded = unSyncedList.size();
             Log.e(TAG, "" + tobeUploaded);

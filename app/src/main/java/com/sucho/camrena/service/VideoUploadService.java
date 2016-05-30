@@ -74,7 +74,7 @@ public class VideoUploadService extends Service {
         }
 
         // Let it continue running until it is stopped.
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     private void upload()

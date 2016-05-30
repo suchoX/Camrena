@@ -1,5 +1,6 @@
 package com.sucho.camrena;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -316,22 +317,21 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         @Override
         protected ArrayList<String> doInBackground(Bitmap... params)
         {
+            ArrayList<String> imageDetails = new ArrayList<String>();
+            imageDetails.add(imageFile.getAbsolutePath());
+            imageDetails.add(imageFile.getName());
             Bitmap bitmapImage = params[0];
             try {
                 FileOutputStream outStream = new FileOutputStream(imageFile);
                 bitmapImage.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
                 outStream.flush();
                 outStream.close();
-                MediaStore.Images.Media.insertImage(getContentResolver(), imageFile.getAbsolutePath(), imageFile.getName(), imageFile.getName());
+                MediaStore.Images.Media.insertImage(getContentResolver(), imageDetails.get(0), imageDetails.get(1), imageDetails.get(1));
 
             }catch (IOException e)
             {
                 e.printStackTrace();
             }
-
-            ArrayList<String> imageDetails = new ArrayList<String>();
-            imageDetails.add(imageFile.getAbsolutePath());
-            imageDetails.add(imageFile.getName());
 
             return imageDetails;
         }
@@ -519,9 +519,19 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void startUploadService()
     {
-        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0)
+        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
             startService(new Intent(getBaseContext(), UploadService.class));
-        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).equalTo("local",true).findAll().size()>0)
+        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(VideoUploadService.class))
             startService(new Intent(getBaseContext(), VideoUploadService.class));
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
