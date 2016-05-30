@@ -7,6 +7,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.hardware.Camera;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.CamcorderProfile;
 import android.media.ExifInterface;
 import android.media.MediaPlayer;
@@ -45,7 +49,7 @@ import java.util.Date;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
-public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Callback {
+public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Callback,SensorEventListener {
     private static final String TAG = "PhotoActivity";
     private Camera camera;
     private CameraPreview cameraPreview;
@@ -67,6 +71,11 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     Realm realm;
     RealmConfiguration realmConfig;
+
+    private SensorManager mSensorManager;
+    Sensor accelerometer;
+    Sensor magnetometer;
+    float orientationValue;
 
 
     Camera.PictureCallback captureCallback = new Camera.PictureCallback()
@@ -98,6 +107,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
         realmConfig = new RealmConfiguration.Builder(this).build();
         realm = Realm.getInstance(realmConfig);
+
+        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
         startUploadService();
 
@@ -287,11 +300,26 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         android.hardware.Camera.getCameraInfo(cameraId, info);
         int degrees = 0;
 
-        if(type==0) {
-            if (cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT)
-                degrees = 180;
-            else
-                degrees = 0;
+        Log.e(TAG,"Orientation Z:"+ orientationValue);
+
+        if(type==0)
+        {
+            if (cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                if(orientationValue <-1.3)//Left Orientation
+                    degrees = 270;
+                else if(orientationValue >1.3)
+                    degrees =90;
+                else
+                    degrees=180;
+            }
+            else {
+                if (orientationValue < -1.3)//Left Orientation
+                    degrees = 90;
+                else if (orientationValue > 1.3)
+                    degrees = 270;
+                else
+                    degrees = 0;
+            }
         }
         else
             degrees=0;
@@ -486,10 +514,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void startUploadService()
     {
-        /*if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
+        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
             startService(new Intent(getBaseContext(), UploadService.class));
         if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(VideoUploadService.class))
-            startService(new Intent(getBaseContext(), VideoUploadService.class));*/
+            startService(new Intent(getBaseContext(), VideoUploadService.class));
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -500,5 +528,50 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             }
         }
         return false;
+    }
+
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {  }
+    float[] mGravity;
+    float[] mGeomagnetic;
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+            mGravity = event.values;
+        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+            mGeomagnetic = event.values;
+        if (mGravity != null && mGeomagnetic != null) {
+            float R[] = new float[9];
+            float I[] = new float[9];
+            boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
+            if (success) {
+                float orientation[] = new float[3];
+                SensorManager.getOrientation(R, orientation);
+                orientationValue = orientation[0]; // orientation contains: azimut, pitch and roll
+            }
+        }
+    }
+
+    protected void onResume() {
+        super.onResume();
+        mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+        mSensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
+    }
+
+    protected void onPause() {
+        super.onPause();
+        mSensorManager.unregisterListener(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if(recording)
+        {
+            recorder.stop();
+            recorder.release();
+            recorder = null;
+            File file = new File(videoPath);
+            file.delete();
+        }
     }
 }

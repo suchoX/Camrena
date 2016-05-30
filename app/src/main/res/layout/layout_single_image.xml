@@ -14,7 +14,7 @@
             android:layout_height="150dp"
             android:scaleType="centerCrop"
             android:adjustViewBounds="true"
-            android:background="@color/colorAccent"/>
+            android:background="@color/grey"/>
         <ImageView
             android:id="@+id/play_overlay"
             android:layout_width="40dp"
