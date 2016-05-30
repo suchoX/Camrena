@@ -30,6 +30,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -74,7 +75,6 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private SensorManager mSensorManager;
     Sensor accelerometer;
-    Sensor magnetometer;
     float orientationValue;
 
 
@@ -110,7 +110,6 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
         startUploadService();
 
@@ -119,7 +118,6 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         cameraClick = MediaPlayer.create(getApplication(), R.raw.camera_click);
         cameraPreviewFrame = (FrameLayout) findViewById(R.id.camera_preview);
         cameraPreviewFrame.addView(cameraPreview);
-
         photoCapture = (FloatingActionButton) findViewById(R.id.photo_capture);
         photoCapture.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -203,9 +201,12 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     }
 
+
+
     private void initCamera()
     {
-        if(camIdx==0) {
+        if(camIdx==0)
+        {
             camera = getFrontCameraInstance();
             if (camera == null) {
                 Toast.makeText(PhotoActivity.this, "No Front Camera! Switching Back Camera", Toast.LENGTH_LONG).show();
@@ -300,17 +301,36 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         android.hardware.Camera.getCameraInfo(cameraId, info);
         int degrees = 0;
 
-        Log.e(TAG,"Orientation Z:"+ orientationValue);
+        Log.e(TAG,"Orientation "+ orientationValue);
 
         if(type==0)
         {
             if (cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                if(orientationValue <-1.3)//Left Orientation
+                if(orientationValue > 7)//Left Orientation
                     degrees = 270;
-                else if(orientationValue >1.3)
+                else if(orientationValue < -7)
                     degrees =90;
                 else
                     degrees=180;
+            }
+            else {
+                if (orientationValue > 7)//Left Orientation
+                    degrees = 90;
+                else if (orientationValue < -7)
+                    degrees = 270;
+                else
+                    degrees = 0;
+            }
+        }
+        else if(type==1)
+        {
+            if (cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                if(orientationValue <-1.3)//Left Orientation
+                    degrees = 90;
+                else if(orientationValue >1.3)
+                    degrees =270;
+                else
+                    degrees=0;
             }
             else {
                 if (orientationValue < -1.3)//Left Orientation
@@ -391,7 +411,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
         recordCam = Camera.open(camIdx);
         Log.e(TAG,"Video Cam Opened");
-        recordCam.setDisplayOrientation(getRotationAngle(camIdx,1));
+        recordCam.setDisplayOrientation(getRotationAngle(camIdx,2));
         recordCam.unlock();
 
         //recordCam.stopPreview();
@@ -414,7 +434,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         videoPath = imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4";
         videoName = "VIDEO_" + timeStamp + ".mp4";
         recorder.setOutputFile(videoPath);
-        recorder.setOrientationHint(getRotationAngle(camIdx,0));
+        recorder.setOrientationHint(getRotationAngle(camIdx,1));
 
         recorderPrep = true;
 
@@ -514,10 +534,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void startUploadService()
     {
-        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
+        /*if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
             startService(new Intent(getBaseContext(), UploadService.class));
         if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(VideoUploadService.class))
-            startService(new Intent(getBaseContext(), VideoUploadService.class));
+            startService(new Intent(getBaseContext(), VideoUploadService.class));*/
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -534,26 +554,18 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     float[] mGravity;
     float[] mGeomagnetic;
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-            mGravity = event.values;
-        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-            mGeomagnetic = event.values;
-        if (mGravity != null && mGeomagnetic != null) {
-            float R[] = new float[9];
-            float I[] = new float[9];
-            boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
-            if (success) {
-                float orientation[] = new float[3];
-                SensorManager.getOrientation(R, orientation);
-                orientationValue = orientation[0]; // orientation contains: azimut, pitch and roll
-            }
-        }
+        float x,y,z;
+        x = orientationValue =  event.values[0];
+        y = event.values[1];
+        z = event.values[2];
+
+        Log.e(TAG,""+x+" "+y+" "+" "+z);
     }
 
     protected void onResume() {
         super.onResume();
         mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
-        mSensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
+        Log.e(TAG,"Listened");
     }
 
     protected void onPause() {

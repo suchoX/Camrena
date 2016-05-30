@@ -8,14 +8,14 @@
 
     <FrameLayout
         android:id="@+id/camera_preview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:visibility="visible"/>
 
     <SurfaceView
         android:id="@+id/video_preview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:visibility="gone"/>
     <TextView
         android:id="@+id/recording_text"
