@@ -325,17 +325,17 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         else if(type==1)
         {
             if (cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                if(orientationValue <-1.3)//Left Orientation
+                if(orientationValue > 7)//Left Orientation
                     degrees = 90;
-                else if(orientationValue >1.3)
+                else if(orientationValue < -7)
                     degrees =270;
                 else
-                    degrees=0;
+                    degrees=180;
             }
             else {
-                if (orientationValue < -1.3)//Left Orientation
+                if (orientationValue > 7)//Left Orientation
                     degrees = 90;
-                else if (orientationValue > 1.3)
+                else if (orientationValue < -7)
                     degrees = 270;
                 else
                     degrees = 0;
@@ -534,10 +534,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void startUploadService()
     {
-        /*if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
+        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
             startService(new Intent(getBaseContext(), UploadService.class));
         if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(VideoUploadService.class))
-            startService(new Intent(getBaseContext(), VideoUploadService.class));*/
+            startService(new Intent(getBaseContext(), VideoUploadService.class));
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -559,7 +559,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         y = event.values[1];
         z = event.values[2];
 
-        Log.e(TAG,""+x+" "+y+" "+" "+z);
+        //Log.e(TAG,""+x+" "+y+" "+" "+z);
     }
 
     protected void onResume() {
