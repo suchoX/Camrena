@@ -74,7 +74,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
 
-            int angleToRotate = getRotationAngle(camIdx);
+            int angleToRotate = getRotationAngle(camIdx,0);
 
             //angleToRotate = angleToRotate + 180;
             Bitmap orignalImage = BitmapFactory.decodeByteArray(data, 0, data.length);
@@ -279,35 +279,21 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         return Bitmap.createBitmap(bitmap, 0, 0, w, h, mtx, true);
     }
 
-    public int getRotationAngle(int cameraId) {
+    public int getRotationAngle(int cameraId,int type)
+    {
         android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
         android.hardware.Camera.getCameraInfo(cameraId, info);
-        int rotation = getWindowManager().getDefaultDisplay().getRotation();
         int degrees = 0;
-        switch (rotation) {
-            case Surface.ROTATION_0:
-                Log.e(TAG,"0 degree");
-                if(cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT)
-                    degrees = 180;
-                else
-                    degrees = 0;
-                break;
-            case Surface.ROTATION_90:
-                Log.e(TAG,"90 degree");
-                degrees = 90;
-                break;
-            case Surface.ROTATION_180:
-                Log.e(TAG,"180 degree");
-                if(cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT)
-                    degrees = 0;
-                else
-                    degrees = 180;
-                break;
-            case Surface.ROTATION_270:
-                Log.e(TAG,"270 degree");
-                degrees = 270;
-                break;
+
+        if(type==0) {
+            if (cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                degrees = 180;
+            else
+                degrees = 0;
         }
+        else
+            degrees=0;
+
         int result;
         if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
             result = (info.orientation + degrees) % 360;
@@ -375,7 +361,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
         recordCam = Camera.open(camIdx);
         Log.e(TAG,"Video Cam Opened");
-        setOrientation();
+        recordCam.setDisplayOrientation(getRotationAngle(camIdx,1));
         recordCam.unlock();
 
         //recordCam.stopPreview();
@@ -398,20 +384,12 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         videoPath = imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4";
         videoName = "VIDEO_" + timeStamp + ".mp4";
         recorder.setOutputFile(videoPath);
+        recorder.setOrientationHint(getRotationAngle(camIdx,0));
 
         recorderPrep = true;
 
         if(!recorderPreped && surfaceCreated)
             prepareRecorder();
-
-        //setOrientation();
-        /*recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        recorder.setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-        Camera.Size size = getBestPreviewSize(surfaceWidth,surfaceHeight, recordCam.getParameters());
-        recorder.setVideoSize(size.width,size.height);*/
-        /*recorder.setMaxDuration(50000); // 50 seconds
-        recorder.setMaxFileSize(5000000); // Approximately 5 megabytes*/
 
 
     }
@@ -470,15 +448,6 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         Log.e(TAG,"Video Surface Changed");
         surfaceWidth = width;
         surfaceHeight = height;
-        //setOrientation();
-        /*try {
-            recordCam.setPreviewDisplay(videoHolder);
-            recordCam.startPreview();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        /*Camera.Size size = getBestPreviewSize(width,height, recordCam.getParameters());
-        recorder.setVideoSize(size.width,size.height);*/
     }
 
     @Override
@@ -493,22 +462,6 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         recordCam.release();
     }
 
-    private void setOrientation()
-    {
-        WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
-        Display display = wm.getDefaultDisplay();
-        //recordCam.stopPreview();
-
-        if(display.getRotation() == Surface.ROTATION_0)
-            recordCam.setDisplayOrientation(90);
-        else if(display.getRotation() == Surface.ROTATION_90)
-            recordCam.setDisplayOrientation(180);
-        else if(display.getRotation() == Surface.ROTATION_180)
-            recordCam.setDisplayOrientation(270);
-        else if(display.getRotation() == Surface.ROTATION_270)
-            recordCam.setDisplayOrientation(0);
-        //recordCam.startPreview();
-    }
     private Camera.Size getBestPreviewSize(int width, int height, Camera.Parameters parameters) {
         Camera.Size result = null;
 
