@@ -174,6 +174,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
 
             @Override
             public void onFailure(Throwable throwable) {
+                throwable.printStackTrace();
                 Picasso.with(view.getContext()).load(R.drawable.image_error).fit().centerCrop().placeholder(R.drawable.image_default).into(imageView);
             }
         });

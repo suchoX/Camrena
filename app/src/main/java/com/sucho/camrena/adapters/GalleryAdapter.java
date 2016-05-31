@@ -5,12 +5,10 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
-import android.nfc.Tag;
 import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,11 +17,8 @@ import android.widget.ImageView;
 
 import com.kinvey.android.Client;
 import com.kinvey.android.callback.KinveyUserCallback;
-import com.kinvey.java.Query;
 import com.kinvey.java.User;
-import com.kinvey.java.core.DownloaderProgressListener;
 import com.kinvey.java.core.KinveyClientCallback;
-import com.kinvey.java.core.MediaHttpDownloader;
 import com.kinvey.java.model.FileMetaData;
 import com.squareup.picasso.Picasso;
 import com.sucho.camrena.R;
@@ -32,10 +27,7 @@ import com.sucho.camrena.others.GalleryObjectHolder;
 import com.sucho.camrena.realm.GalleryObject;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 
-import io.realm.RealmList;
 import io.realm.RealmResults;
 
 /**

@@ -51,7 +51,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) 
     {
-        Log.e("Camera Preview","Camera Surface Created");
+        //Log.e("Camera Preview","Camera Surface Created");
         try {
             camera.setPreviewDisplay(surfaceHolder);
             camera.startPreview();
@@ -63,7 +63,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) 
     {
-        Log.e("Camera Preview","Camera Surface Destroyed");
+        //Log.e("Camera Preview","Camera Surface Destroyed");
         camera.stopPreview();
         camera.release();
     }
@@ -71,12 +71,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) 
     {
-        Log.e(TAG,"Camera Surface Changed");
+        //Log.e(TAG,"Camera Surface Changed");
         camera.stopPreview();
         this.width = width;
         this.height = height;
         orientationChange(width,height);
-        Log.e(TAG,"Surface- "+width+" "+height);
+        //Log.e(TAG,"Surface- "+width+" "+height);
     }
 
     private void orientationChange(int width,int height)
@@ -94,7 +94,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         if(display.getRotation() == Surface.ROTATION_270)
             camera.setDisplayOrientation(0);
-        Log.e(TAG,"Image- "+imageSize.width+" "+imageSize.height);
+        //Log.e(TAG,"Image- "+imageSize.width+" "+imageSize.height);
         parameters.setPictureSize(imageSize.width, imageSize.height);
         parameters.setPreviewSize(imageSize.width, imageSize.height);
 
@@ -129,9 +129,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private void setFrameLayout(int imageWidth,int imageHeight)
     {
         DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-        Log.e(TAG,"Actual- "+metrics.widthPixels+" "+metrics.heightPixels);
+        //Log.e(TAG,"Actual- "+metrics.widthPixels+" "+metrics.heightPixels);
         int layoutheight = (metrics.widthPixels*imageWidth)/imageHeight;
-        Log.e(TAG,"Screen- "+metrics.widthPixels+" "+layoutheight);
+        //Log.e(TAG,"Screen- "+metrics.widthPixels+" "+layoutheight);
         ((PhotoActivity)context).setFrameLayout(metrics.widthPixels,layoutheight);
     }
 }

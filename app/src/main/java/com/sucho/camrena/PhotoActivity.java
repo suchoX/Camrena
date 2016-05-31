@@ -14,9 +14,10 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.CamcorderProfile;
-import android.media.ExifInterface;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
@@ -25,9 +26,8 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -43,16 +43,17 @@ import com.sucho.camrena.service.UploadService;
 import com.sucho.camrena.service.VideoUploadService;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
+@SuppressWarnings("deprecation")
 public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Callback,SensorEventListener {
     private static final String TAG = "PhotoActivity";
     private Camera camera;
@@ -161,6 +162,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             }
         });
 
+
+
+
         stopRecord = (FloatingActionButton) findViewById(R.id.stop_recording);
         stopRecord.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -213,7 +217,6 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     private int checkSyncStatus()
     {
         syncPreference = this.getSharedPreferences("EventData", 0);
-        Log.e(TAG,""+syncPreference.getInt("Sync Status",2));
         return syncPreference.getInt("Sync Status",2); //0-Don't Sync; 1-Sync: 2-First Time
     }
 
@@ -343,7 +346,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         android.hardware.Camera.getCameraInfo(cameraId, info);
         int degrees = 0;
 
-        Log.e(TAG,"Orientation "+ orientationValue);
+        //Log.e(TAG,"Orientation "+ orientationValue);
 
         if(type==0)
         {
@@ -451,9 +454,15 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         videoHolder = videoView.getHolder();
         videoHolder.addCallback(this);
 
+
+
         recordCam = Camera.open(camIdx);
-        Log.e(TAG,"Video Cam Opened");
+        Camera.Parameters parameters = recordCam.getParameters();
+        Camera.Size videoSize = getVideoSize(parameters);
+        parameters.setPreviewSize(videoSize.width,videoSize.height);
+        setSurfaceLayout(videoSize.width,videoSize.height);
         recordCam.setDisplayOrientation(getRotationAngle(camIdx,2));
+        recordCam.setParameters(parameters);
         recordCam.unlock();
 
         //recordCam.stopPreview();
@@ -468,8 +477,20 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             }
         }
         CamcorderProfile cpHigh = CamcorderProfile.get(camIdx,CamcorderProfile.QUALITY_480P);
-        recorder.setProfile(cpHigh);
-        Log.e(TAG,"Profile Set");
+        /*recorder.setProfile(cpHigh);*/
+
+        Log.e(TAG,""+videoSize.width+" "+videoSize.height);
+
+        recorder.setOutputFormat(cpHigh.fileFormat);
+        recorder.setAudioEncoder(cpHigh.audioCodec);
+        recorder.setAudioEncodingBitRate(cpHigh.audioBitRate);
+        recorder.setAudioChannels(cpHigh.audioChannels);
+        recorder.setAudioSamplingRate(cpHigh.audioSampleRate);
+        recorder.setVideoFrameRate(cpHigh.videoFrameRate);
+        recorder.setVideoEncodingBitRate(cpHigh.videoBitRate);
+        recorder.setVideoEncoder(cpHigh.videoCodec);
+        recorder.setVideoSize(videoSize.width,videoSize.height);
+        //Log.e(TAG,"Profile Set");
 
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         Log.e(TAG,imageStorageDir.getPath() + File.separator + "VIDEO_" + timeStamp + ".mp4");
@@ -486,8 +507,18 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     }
 
+    private void setSurfaceLayout(int imageWidth,int imageHeight)
+    {
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        //Log.e(TAG,"Actual- "+metrics.widthPixels+" "+metrics.heightPixels);
+        int layoutheight = (metrics.widthPixels*imageWidth)/imageHeight;
+        //Log.e(TAG,"Screen- "+metrics.widthPixels+" "+layoutheight);
+
+        videoView.setLayoutParams(new RelativeLayout.LayoutParams(metrics.widthPixels,layoutheight));
+    }
+
     private void prepareRecorder() {
-        Log.e(TAG,"Recorder Prepared");
+        //Log.e(TAG,"Recorder Prepared");
         try {
             recorder.prepare();
             recorderPreped=true;
@@ -527,7 +558,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        Log.e(TAG,"Video Surface Created");
+        //Log.e(TAG,"Video Surface Created");
         surfaceCreated=true;
         recorder.setPreviewDisplay(videoHolder.getSurface());
         if(recorderPrep)
@@ -537,14 +568,14 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height)
     {
-        Log.e(TAG,"Video Surface Changed");
+        //Log.e(TAG,"Video Surface Changed");
         surfaceWidth = width;
         surfaceHeight = height;
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.e(TAG,"Video Surface Destroyed");
+        //Log.e(TAG,"Video Surface Destroyed");
         if (recording) {
             recorder.stop();
             recorder.release();
@@ -554,29 +585,25 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         recordCam.release();
     }
 
-    private Camera.Size getBestPreviewSize(int width, int height, Camera.Parameters parameters) {
-        Camera.Size result = null;
+    private Camera.Size getVideoSize(Camera.Parameters parameters) {
+        Camera.Size bestSize = null;
+        List<Camera.Size> sizeList = parameters.getSupportedPreviewSizes();
 
-        for (Camera.Size size : parameters.getSupportedPreviewSizes()) {
-            if (size.width <= width && size.height <= height) {
-                if (result == null) {
-                    result = size;
-                } else {
-                    int resultArea = result.width * result.height;
-                    int newArea = size.width * size.height;
+        bestSize = sizeList.get(0);
 
-                    if (newArea > resultArea) {
-                        result = size;
-                    }
-                }
+        for(int i = 1; i < sizeList.size(); i++){
+            if((sizeList.get(i).width * sizeList.get(i).height) > (bestSize.width * bestSize.height)){
+                bestSize = sizeList.get(i);
             }
         }
-        return (result);
+
+        return bestSize;
     }
 
     private void startUploadService()
     {
-        if(checkSyncStatus()==1) {
+        if(checkSyncStatus()==1 && isOnline())
+        {
             if (realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage", true).equalTo("local", true).findAll().size() > 0 && !isMyServiceRunning(UploadService.class))
                 startService(new Intent(getBaseContext(), UploadService.class));
             if (realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage", false).equalTo("local", true).findAll().size() > 0 && !isMyServiceRunning(VideoUploadService.class))
@@ -594,6 +621,13 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         return false;
     }
 
+    public boolean isOnline()
+    {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnected();
+    }
+
     public void onAccuracyChanged(Sensor sensor, int accuracy) {  }
 
     public void onSensorChanged(SensorEvent event)
@@ -604,7 +638,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     protected void onResume() {
         super.onResume();
         mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
-        Log.e(TAG,"Listened");
+        //Log.e(TAG,"Listened");
     }
 
     protected void onPause() {
