@@ -2,7 +2,9 @@ package com.sucho.camrena;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -20,6 +22,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -77,6 +80,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     Sensor accelerometer;
     float orientationValue;
 
+    SharedPreferences syncPreference;
+    SharedPreferences.Editor editor;
+
 
     Camera.PictureCallback captureCallback = new Camera.PictureCallback()
     {
@@ -110,6 +116,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        if(checkSyncStatus()==2)
+            showSyncDialog();
 
         startUploadService();
 
@@ -199,6 +208,36 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         videoView = (SurfaceView)findViewById(R.id.video_preview);
         recordingText = (TextView)findViewById(R.id.recording_text);
 
+    }
+
+    private int checkSyncStatus()
+    {
+        syncPreference = this.getSharedPreferences("EventData", 0);
+        Log.e(TAG,""+syncPreference.getInt("Sync Status",2));
+        return syncPreference.getInt("Sync Status",2); //0-Don't Sync; 1-Sync: 2-First Time
+    }
+
+    private void showSyncDialog()
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(PhotoActivity.this);
+        builder.setTitle("Auto Sync");
+        builder.setMessage("Do you automatically want your photos and videos to be synced to cloud?");
+        builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                editor = syncPreference.edit();
+                editor.putInt("Sync Status",1);
+                editor.apply();
+            }
+        });
+        builder.setNegativeButton("NO",new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                editor = syncPreference.edit();
+                editor.putInt("Sync Status",0);
+                editor.apply();
+            }
+        });
+        builder.setCancelable(false);
+        builder.show();
     }
 
 
@@ -534,10 +573,12 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void startUploadService()
     {
-        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(UploadService.class))
-            startService(new Intent(getBaseContext(), UploadService.class));
-        if(realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).equalTo("local",true).findAll().size()>0 && !isMyServiceRunning(VideoUploadService.class))
-            startService(new Intent(getBaseContext(), VideoUploadService.class));
+        if(checkSyncStatus()==1) {
+            if (realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage", true).equalTo("local", true).findAll().size() > 0 && !isMyServiceRunning(UploadService.class))
+                startService(new Intent(getBaseContext(), UploadService.class));
+            if (realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage", false).equalTo("local", true).findAll().size() > 0 && !isMyServiceRunning(VideoUploadService.class))
+                startService(new Intent(getBaseContext(), VideoUploadService.class));
+        }
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -580,7 +621,6 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             File file = new File(videoPath);
             file.delete();
         }
-
         finish();
     }
 }

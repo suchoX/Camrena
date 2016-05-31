@@ -1,36 +1,29 @@
 package com.sucho.camrena;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
+import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 
-import com.kinvey.android.Client;
-import com.kinvey.android.callback.KinveyPingCallback;
 import com.sucho.camrena.adapters.GalleryAdapter;
-import com.sucho.camrena.others.Constants;
 import com.sucho.camrena.realm.GalleryObject;
-import com.sucho.camrena.service.UploadService;
 
-import java.io.File;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
-import io.realm.RealmList;
 import io.realm.RealmResults;
 
 public class GalleryActivity extends AppCompatActivity {
     private static final String TAG = "GalleryActivity";
 
     Toolbar mToolbar;
+    Switch toolbarSwitch;
 
     Realm realm;
     RealmConfiguration realmConfig;
@@ -40,13 +33,20 @@ public class GalleryActivity extends AppCompatActivity {
     private GridLayoutManager gridLayoutManager;
     GalleryAdapter galleryAdapter;
 
+    SharedPreferences syncPreference;
+    SharedPreferences.Editor editor;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gallery);
         realmConfig = new RealmConfiguration.Builder(this).build();
         realm = Realm.getInstance(realmConfig);
+
+        syncPreference = this.getSharedPreferences("EventData", 0);
+
         initToolbar();
+        setSyncSwitch();
 
         galleryList = realm.where(GalleryObject.class).findAll();
 
@@ -63,14 +63,39 @@ public class GalleryActivity extends AppCompatActivity {
 
     }
 
+    private void setSyncSwitch()
+    {
+        if(syncPreference.getInt("Sync Status",2)==1)
+            toolbarSwitch.setChecked(true);
+        else
+            toolbarSwitch.setChecked(false);
+    }
+
 
 
     private void initToolbar() {
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbarSwitch = (Switch) findViewById(R.id.toolbar_switch);
+        toolbarSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked)
+                {
+                    editor = syncPreference.edit();
+                    editor.putInt("Sync Status",1);
+                    editor.apply();
+                }
+                else
+                {
+                    editor = syncPreference.edit();
+                    editor.putInt("Sync Status",0);
+                    editor.apply();
+                }
+            }
+        });
         setSupportActionBar(mToolbar);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("Gallery");
         mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
