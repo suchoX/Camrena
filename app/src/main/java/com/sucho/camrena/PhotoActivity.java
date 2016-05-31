@@ -551,15 +551,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     }
 
     public void onAccuracyChanged(Sensor sensor, int accuracy) {  }
-    float[] mGravity;
-    float[] mGeomagnetic;
-    public void onSensorChanged(SensorEvent event) {
-        float x,y,z;
-        x = orientationValue =  event.values[0];
-        y = event.values[1];
-        z = event.values[2];
 
-        //Log.e(TAG,""+x+" "+y+" "+" "+z);
+    public void onSensorChanged(SensorEvent event)
+    {
+        orientationValue =  event.values[0];
     }
 
     protected void onResume() {
@@ -585,5 +580,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             File file = new File(videoPath);
             file.delete();
         }
+
+        finish();
     }
 }
