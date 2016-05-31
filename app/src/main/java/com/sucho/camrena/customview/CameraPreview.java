@@ -2,6 +2,7 @@ package com.sucho.camrena.customview;
 
 import android.content.Context;
 import android.hardware.Camera;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
@@ -19,6 +20,7 @@ import java.util.List;
  */
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 {
+    private static final String TAG = "Camera Preview";
     private SurfaceHolder surfaceHolder;
     private Camera camera;
     Context context;
@@ -69,11 +71,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) 
     {
-        Log.e("Camera Preview","Camera Surface Changed");
+        Log.e(TAG,"Camera Surface Changed");
         camera.stopPreview();
         this.width = width;
         this.height = height;
         orientationChange(width,height);
+        Log.e(TAG,"Surface- "+width+" "+height);
     }
 
     private void orientationChange(int width,int height)
@@ -85,20 +88,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         Camera.Size imageSize = getImageSize(width, height, parameters);
 
-        if(display.getRotation() == Surface.ROTATION_0)
-        {
 
+        if(display.getRotation() == Surface.ROTATION_0)
             camera.setDisplayOrientation(90);
-        }
 
         if(display.getRotation() == Surface.ROTATION_270)
-        {
-            parameters.setPictureSize(imageSize.width, imageSize.height);
             camera.setDisplayOrientation(0);
-        }
-        List<Camera.Size> mSupportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
-        Camera.Size mPreviewSize = getOptimalPreviewSize(mSupportedPreviewSizes, width, height);
-        Log.e("XXX",""+imageSize.width+" "+imageSize.height);
+        Log.e(TAG,"Image- "+imageSize.width+" "+imageSize.height);
         parameters.setPictureSize(imageSize.width, imageSize.height);
         parameters.setPreviewSize(imageSize.width, imageSize.height);
 
@@ -110,6 +106,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        setFrameLayout(imageSize.width,imageSize.height);
     }
 
     private Camera.Size getImageSize(int width, int height, Camera.Parameters parameters){
@@ -119,8 +117,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         bestSize = sizeList.get(0);
 
         for(int i = 1; i < sizeList.size(); i++){
-            if((sizeList.get(i).width * sizeList.get(i).height) >
-                    (bestSize.width * bestSize.height)){
+            if((sizeList.get(i).width * sizeList.get(i).height) > (bestSize.width * bestSize.height)){
                 bestSize = sizeList.get(i);
             }
         }
@@ -128,35 +125,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         return bestSize;
     }
 
-    private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
-        final double ASPECT_TOLERANCE = 0.1;
-        double targetRatio=(double)h / w;
 
-        if (sizes == null) return null;
-
-        Camera.Size optimalSize = null;
-        double minDiff = Double.MAX_VALUE;
-
-        int targetHeight = h;
-
-        for (Camera.Size size : sizes) {
-            double ratio = (double) size.width / size.height;
-            if (Math.abs(ratio - targetRatio) > ASPECT_TOLERANCE) continue;
-            if (Math.abs(size.height - targetHeight) < minDiff) {
-                optimalSize = size;
-                minDiff = Math.abs(size.height - targetHeight);
-            }
-        }
-
-        if (optimalSize == null) {
-            minDiff = Double.MAX_VALUE;
-            for (Camera.Size size : sizes) {
-                if (Math.abs(size.height - targetHeight) < minDiff) {
-                    optimalSize = size;
-                    minDiff = Math.abs(size.height - targetHeight);
-                }
-            }
-        }
-        return optimalSize;
+    private void setFrameLayout(int imageWidth,int imageHeight)
+    {
+        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+        Log.e(TAG,"Actual- "+metrics.widthPixels+" "+metrics.heightPixels);
+        int layoutheight = (metrics.widthPixels*imageWidth)/imageHeight;
+        Log.e(TAG,"Screen- "+metrics.widthPixels+" "+layoutheight);
+        ((PhotoActivity)context).setFrameLayout(metrics.widthPixels,layoutheight);
     }
 }

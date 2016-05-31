@@ -240,7 +240,10 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         builder.show();
     }
 
-
+    public void setFrameLayout(int width,int height)
+    {
+        cameraPreviewFrame.setLayoutParams(new RelativeLayout.LayoutParams(width,height));
+    }
 
     private void initCamera()
     {
