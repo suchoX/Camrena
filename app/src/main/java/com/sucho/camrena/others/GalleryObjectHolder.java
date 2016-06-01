@@ -174,7 +174,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
             @Override
             public void onSuccess(FileMetaData fileMetaData) {
                 storageImage.setVisibility(View.VISIBLE);
-                Picasso.with(view.getContext()).load(fileMetaData.getDownloadURL()).fit().centerCrop().placeholder(R.drawable.image_default).error(R.drawable.image_error).into(imageView);
+                Picasso.with(view.getContext()).load(fileMetaData.getDownloadURL()).placeholder(R.drawable.image_default).error(R.drawable.image_error).into(imageView);
             }
 
             @Override
