@@ -30,12 +30,10 @@ public class UploadService extends Service {
 
     Realm realm;
     RealmConfiguration realmConfig;
-    RealmResults<GalleryObject> unSyncedList;
+    GalleryObject toUploadObject;
     Client mKinveyClient;
 
-    ArrayList<String> uploadedId;
-    ArrayList<String> avoidUpload;
-    int tobeUploaded,count=0;
+    int tobeUploaded;
 
     public UploadService()
     {
@@ -52,10 +50,13 @@ public class UploadService extends Service {
         realmConfig = new RealmConfiguration.Builder(this).build();
         realm = Realm.getInstance(realmConfig);
 
+        tobeUploaded = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll().size();
+        Log.e(TAG, "" + tobeUploaded);
+        if (tobeUploaded == 0)
+            stopSelf();
+
         mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, this.getApplicationContext()).build();
 
-        uploadedId = new ArrayList<String>();
-        avoidUpload = new ArrayList<String>();
         if (mKinveyClient.user().isUserLoggedIn())
             upload();
         else {
@@ -80,82 +81,70 @@ public class UploadService extends Service {
 
     private void upload()
     {
-        try {
-            unSyncedList = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findAll();
-            tobeUploaded = unSyncedList.size();
-            Log.e(TAG, "" + tobeUploaded);
-            if (tobeUploaded == 0)
-                stopSelf();
-            for (int i = 0; i < tobeUploaded; i++)
+        try
+        {
+            toUploadObject = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findFirst();
+            FileMetaData myFileMetaData = new FileMetaData(toUploadObject.getId());  //create the FileMetaData object
+            myFileMetaData.setPublic(true);  //set the file to be pubicly accesible
+            myFileMetaData.setFileName(toUploadObject.getId());
+            java.io.File file = new java.io.File(toUploadObject.getPath());
+            if(!file.exists())
             {
-                FileMetaData myFileMetaData = new FileMetaData(unSyncedList.get(i).getId());  //create the FileMetaData object
-                myFileMetaData.setPublic(true);  //set the file to be pubicly accesible
-                myFileMetaData.setFileName(unSyncedList.get(i).getId());
-                java.io.File file = new java.io.File(unSyncedList.get(i).getPath());
-                if(!file.exists())
-                {
-                    Log.e(TAG,unSyncedList.get(i).getId()+" deleted(Not Synced");
-                    avoidUpload.add(unSyncedList.get(i).getId());
-                    if(i==tobeUploaded-1) {
-                        updateRealm();
-                        break;
-                    }
-                    else
-                        continue;
-                }
-                mKinveyClient.file().upload(myFileMetaData, file, new UploaderProgressListener() {
-
-                    @Override
-                    public void onSuccess(FileMetaData fileMetaData) {
-                        Log.e(TAG, "Uploaded:" + fileMetaData.getFileName());
-                        uploadedId.add(fileMetaData.getFileName());
-                        if (count == tobeUploaded - 1) {
-                            updateRealm();
-                            Log.e(TAG, "Count " + count);
-                        } else
-                            count++;
-                    }
-
-                    @Override
-                    public void onFailure(Throwable error) {
-                        Log.e(TAG, "failed to upload file.", error);
-                        updateRealm();
-                    }
-
-                    @Override
-                    public void progressChanged(MediaHttpUploader uploader) throws IOException {
-                        Log.i(TAG, "upload progress: " + uploader.getUploadState());
-                        // all updates to UI widgets need to be done on the UI thread
-                    }
-                });
+                Log.e(TAG,toUploadObject.getId()+" deleted(Not Synced)");
+                updateRealmAvoid();
             }
+            mKinveyClient.file().upload(myFileMetaData, file, new UploaderProgressListener() {
+
+                @Override
+                public void onSuccess(FileMetaData fileMetaData) {
+                    Log.e(TAG, "Uploaded:" + fileMetaData.getFileName());
+                    updateRealmUpload();
+                }
+
+                @Override
+                public void onFailure(Throwable error) {
+                    Log.e(TAG, "failed to upload file.", error);
+                    stopSelf();
+                }
+
+                @Override
+                public void progressChanged(MediaHttpUploader uploader) throws IOException {
+                    Log.i(TAG, "upload progress: " + uploader.getUploadState());
+                    // all updates to UI widgets need to be done on the UI thread
+                }
+            });
         } catch (Exception e)
         {
             e.printStackTrace();
-            updateRealm();
             stopSelf();
         }
     }
 
-    private void updateRealm()
+    private void updateRealmUpload()
     {
-        GalleryObject galleryObject;
-        for(int i=0 ; i<uploadedId.size() ; i++)
-        {
-            realm.beginTransaction();
-            galleryObject = realm.where(GalleryObject.class).equalTo("id",uploadedId.get(i)).findFirst();
-            galleryObject.setSynced(true);
-            realm.commitTransaction();
-        }
+        realm.beginTransaction();
+        toUploadObject.setSynced(true);
+        realm.commitTransaction();
+        next();
+    }
 
-        for(int i=0 ; i<avoidUpload.size() ; i++)
+    private void updateRealmAvoid()
+    {
+        realm.beginTransaction();
+        toUploadObject.setLocal(false);
+        realm.commitTransaction();
+        next();
+    }
+
+    private void next()
+    {
+        if (tobeUploaded == 1)
+            stopSelf();
+        else
         {
-            realm.beginTransaction();
-            galleryObject = realm.where(GalleryObject.class).equalTo("id",avoidUpload.get(i)).findFirst();
-            galleryObject.setLocal(false);
-            realm.commitTransaction();
+            stopSelf();
+            startService(new Intent(getBaseContext(), UploadService.class));
         }
-        stopSelf();
     }
 
     @Override
