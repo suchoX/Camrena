@@ -3,6 +3,8 @@ package com.sucho.camrena.others;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -84,6 +86,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
             else {
                 loginCheck(id,dialogImage,view);
                 storageImage.setImageDrawable(ContextCompat.getDrawable(view.getContext(),R.drawable.cloud));
+                storageImage.setVisibility(View.GONE);
                 popupDialog.setView(imageViewDialog);
             }
 
@@ -120,6 +123,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
             else
             {
                 storageImage.setImageDrawable(ContextCompat.getDrawable(view.getContext(),R.drawable.cloud));
+                storageImage.setVisibility(View.GONE);
                 mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, view.getContext().getApplicationContext()).build();
                 if (mKinveyClient.user().isUserLoggedIn())
                     playVideoStream(id,dialogVideo);
@@ -169,6 +173,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
         mKinveyClient.file().downloadMetaData(imgId, new KinveyClientCallback<FileMetaData>() {
             @Override
             public void onSuccess(FileMetaData fileMetaData) {
+                storageImage.setVisibility(View.VISIBLE);
                 Picasso.with(view.getContext()).load(fileMetaData.getDownloadURL()).fit().centerCrop().placeholder(R.drawable.image_default).error(R.drawable.image_error).into(imageView);
             }
 
@@ -186,13 +191,16 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
             @Override
             public void onSuccess(FileMetaData fileMetaData) {
                 Log.e("Holder",fileMetaData.getDownloadURL());
+                storageImage.setVisibility(View.VISIBLE);
                 videoView.setVideoURI(Uri.parse(fileMetaData.getDownloadURL()));
                 videoView.start();
             }
 
             @Override
             public void onFailure(Throwable throwable) {
-
+                videoView.stopPlayback();
+                Toast.makeText(videoView.getContext(),"Video deleted from Local Storage. Either no Internet/Video not synced",Toast.LENGTH_LONG).show();
+                popupDialog.dismiss();
             }
         });
     }

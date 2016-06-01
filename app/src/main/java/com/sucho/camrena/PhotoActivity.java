@@ -62,7 +62,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
     FloatingActionButton photoCapture,videoCapture,swapCamera,stopRecord,gallery;
     MediaPlayer cameraClick;
 
-    int camIdx=0;
+    int camIdx=99;
     File imageFile;
 
     MediaRecorder recorder;
@@ -114,6 +114,8 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
         realmConfig = new RealmConfiguration.Builder(this).build();
         realm = Realm.getInstance(realmConfig);
+
+        camIdx = getIntent().getIntExtra("Camera",99);
 
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -204,7 +206,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
         gallery.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(PhotoActivity.this,GalleryActivity.class));
+                Intent intent = new Intent(PhotoActivity.this,GalleryActivity.class);
+                intent.putExtra("Camera",camIdx);
+                startActivity(intent);
                 finish();
             }
         });
@@ -250,7 +254,7 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
 
     private void initCamera()
     {
-        if(camIdx==0)
+        if(camIdx==99)
         {
             camera = getFrontCameraInstance();
             if (camera == null) {

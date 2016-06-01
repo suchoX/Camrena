@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.Switch;
@@ -36,12 +37,16 @@ public class GalleryActivity extends AppCompatActivity {
     SharedPreferences syncPreference;
     SharedPreferences.Editor editor;
 
+    int camId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gallery);
         realmConfig = new RealmConfiguration.Builder(this).build();
         realm = Realm.getInstance(realmConfig);
+
+        camId = getIntent().getIntExtra("Camera",99);
 
         syncPreference = this.getSharedPreferences("EventData", 0);
 
@@ -106,7 +111,9 @@ public class GalleryActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        startActivity(new Intent(GalleryActivity.this,PhotoActivity.class));
+        Intent intent = new Intent(GalleryActivity.this,PhotoActivity.class);
+        intent.putExtra("Camera",camId);
+        startActivity(intent);
         finish();
     }
 
