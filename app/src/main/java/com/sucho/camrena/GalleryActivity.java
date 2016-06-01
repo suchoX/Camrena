@@ -48,12 +48,12 @@ public class GalleryActivity extends AppCompatActivity {
 
         camId = getIntent().getIntExtra("Camera",99);
 
-        syncPreference = this.getSharedPreferences("EventData", 0);
+        syncPreference = this.getSharedPreferences("EventData", 0); //This SharedPreference stores the user's option whether to AutoSync
 
         initToolbar();
         setSyncSwitch();
 
-        galleryList = realm.where(GalleryObject.class).findAll();
+        galleryList = realm.where(GalleryObject.class).findAll();   //Get all Images and Videos
 
         //Log.e(TAG,""+realm.where(GalleryObject.class).equalTo("isimage",false).findAll().size());
 
@@ -83,7 +83,7 @@ public class GalleryActivity extends AppCompatActivity {
         toolbarSwitch = (Switch) findViewById(R.id.toolbar_switch);
         toolbarSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {    //Changing Auto Sync option based on switch
                 if(isChecked)
                 {
                     editor = syncPreference.edit();
@@ -111,7 +111,7 @@ public class GalleryActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        Intent intent = new Intent(GalleryActivity.this,PhotoActivity.class);
+        Intent intent = new Intent(GalleryActivity.this,PhotoActivity.class);   //Going back to PhotoActivity
         intent.putExtra("Camera",camId);
         startActivity(intent);
         finish();

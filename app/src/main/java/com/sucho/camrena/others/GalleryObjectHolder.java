@@ -65,11 +65,16 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
     @Override
     public void onClick(final View view)
     {
+        /**
+         * Called when and Image/Video is clicked in the gallery. The video or image is
+         * shown in a custom AlertDialog
+         */
         tempBuilder=new AlertDialog.Builder(view.getContext());
         popupDialog=tempBuilder.create();
         factory = (LayoutInflater) view.getContext().getSystemService( Context.LAYOUT_INFLATER_SERVICE );
         if(isimage)
         {
+            //Image Shown
             imageViewDialog = factory.inflate(R.layout.dialog_image, null);
 
             dialogImage = (ImageView) imageViewDialog.findViewById(R.id.dialog_image);
@@ -77,6 +82,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
             storageImage = (ImageView)imageViewDialog.findViewById(R.id.storage_location);
 
             File file = new File(path);
+            //Checks if Image is present in local memory or not
             if(file.exists())
             {
                 Bitmap bmp = BitmapFactory.decodeFile(path);
@@ -90,6 +96,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
                 popupDialog.setView(imageViewDialog);
             }
 
+            //Checks if Image is synced or not
             if(synced)
                 syncedImage.setVisibility(View.VISIBLE);
             else
@@ -98,9 +105,11 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
         }
         else
         {
+            //Video Shown
             videoViewDialog = factory.inflate(R.layout.dialog_video,null);
             syncedImage = (ImageView)videoViewDialog.findViewById(R.id.synced);
             storageImage = (ImageView)videoViewDialog.findViewById(R.id.storage_location);
+            //Checks if Video is synced or not
             if(synced)
                 syncedImage.setVisibility(View.VISIBLE);
             else
@@ -110,6 +119,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
             popupDialog.setView(videoViewDialog);
 
             File file = new File(path);
+            //Checks if Video is present in local memory or not
             if(file.exists()) {
                 canPlay = true;
                 dialogVideo.setVideoPath(path);
@@ -125,6 +135,7 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
                 storageImage.setImageDrawable(ContextCompat.getDrawable(view.getContext(),R.drawable.cloud));
                 storageImage.setVisibility(View.GONE);
                 mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, view.getContext().getApplicationContext()).build();
+                //Checks Login
                 if (mKinveyClient.user().isUserLoggedIn())
                     playVideoStream(id,dialogVideo);
                 else {
@@ -151,6 +162,9 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
 
     private void loginCheck(final String imgId, final ImageView imageView, final View view)
     {
+        /**
+         * Check for Device Kinvey Login
+         */
         mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, view.getContext().getApplicationContext()).build();
         if (mKinveyClient.user().isUserLoggedIn())
             downloadDeletedImage(imgId,imageView,view);
@@ -170,6 +184,10 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
 
     private void downloadDeletedImage(String imgId, final ImageView imageView,final View view)
     {
+        /**
+         * This Method fetches the download link of the required synced Image and is then
+         * shown in a ImageView
+         */
         mKinveyClient.file().downloadMetaData(imgId, new KinveyClientCallback<FileMetaData>() {
             @Override
             public void onSuccess(FileMetaData fileMetaData) {
@@ -187,6 +205,10 @@ public class GalleryObjectHolder extends RecyclerView.ViewHolder  implements Vie
 
     private void playVideoStream(String id,final VideoView videoView)
     {
+        /**
+         * This Method fetches the download link of the required synced video and is then
+         * streamed in a videoview
+         */
         mKinveyClient.file().downloadMetaData(id, new KinveyClientCallback<FileMetaData>() {
             @Override
             public void onSuccess(FileMetaData fileMetaData) {

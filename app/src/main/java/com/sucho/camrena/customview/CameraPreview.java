@@ -38,6 +38,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     public void switchCamera(Camera camera)
     {
+        /**
+         * This method switches the camera when swapcamera button is clicked
+         */
         this.camera = camera;
         try {
         camera.setPreviewDisplay(surfaceHolder);
@@ -81,6 +84,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     private void orientationChange(int width,int height)
     {
+        /**
+         * This Method Sets the preview and Image orienatation
+         */
         Camera.Parameters parameters = camera.getParameters();
 
         WindowManager wm = (WindowManager)(context).getSystemService(Context.WINDOW_SERVICE);
@@ -110,7 +116,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         setFrameLayout(imageSize.width,imageSize.height);
     }
 
-    private Camera.Size getImageSize(int width, int height, Camera.Parameters parameters){
+    private Camera.Size getImageSize(int width, int height, Camera.Parameters parameters)
+    {
+        /**
+         * This Method selects and returns the Image size to be captured in among the supported
+         * image sizes
+         */
         Camera.Size bestSize = null;
         List<Camera.Size> sizeList = parameters.getSupportedPreviewSizes();
 
@@ -128,6 +139,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     private void setFrameLayout(int imageWidth,int imageHeight)
     {
+        /**
+         * This Method calls the PhotoActivity method, which sets the FrameLayout Size to the
+         * size of the image to be captured
+         */
         DisplayMetrics metrics = context.getResources().getDisplayMetrics();
         //Log.e(TAG,"Actual- "+metrics.widthPixels+" "+metrics.heightPixels);
         int layoutheight = (metrics.widthPixels*imageWidth)/imageHeight;

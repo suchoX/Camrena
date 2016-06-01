@@ -35,6 +35,13 @@ import io.realm.RealmResults;
  */
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
 {
+    /**
+     * This gallery shows a resized image in the Gridview. There is no use loading a 2000x2000 10MB image
+     * in memory if the image in the gris is 100x100. Without resizing the app will encounter
+     * OUT OF MEMORY Error.
+     *
+     * Also the image Loading in Imageview is done by an AsyncTask to prevent UI Stuttering
+     */
     private static final String TAG = "GalleryAdapter";
     private RealmResults<GalleryObject> galleryList;
     private Context context;
@@ -148,8 +155,11 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryObjectHolder>
             return BitmapFactory.decodeFile(path,options);
 
         }
-        private Bitmap decodeAndScale(int imgResId) {
-
+        private Bitmap decodeAndScale(int imgResId)
+        {
+            /**
+             * This method returns a resized image
+             */
             int reqWidth,reqHeight;
             reqWidth = getScreenWidth((Activity)context)/4;
 

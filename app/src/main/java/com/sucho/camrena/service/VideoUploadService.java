@@ -24,6 +24,12 @@ import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
 public class VideoUploadService extends Service {
+    /**
+     * This service Uploads Videos one at a time. To keep number of simultaneous uploads
+     * to one, which gives better performance (Too many simultaneous upload Hangs device),
+     * The service is started again if there are more more Images to be uploaded, else stopped.
+     */
+
     private static final String TAG = "VideoUploadService";
 
     Realm realm;
@@ -55,10 +61,11 @@ public class VideoUploadService extends Service {
 
         mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, this.getApplicationContext()).build();
 
-        if (mKinveyClient.user().isUserLoggedIn())
+        if (mKinveyClient.user().isUserLoggedIn())   //Checks if Device is logged in Kinvey
             upload();
         else {
-            mKinveyClient.user().login(new KinveyUserCallback() {
+            mKinveyClient.user().login(new KinveyUserCallback() //Login User if user not Logged In
+            {
                 @Override
                 public void onFailure(Throwable error) {
                     Log.e(TAG, "Login Failure", error);
@@ -73,7 +80,6 @@ public class VideoUploadService extends Service {
             });
         }
 
-        // Let it continue running until it is stopped.
         return START_NOT_STICKY;
     }
 
@@ -81,6 +87,7 @@ public class VideoUploadService extends Service {
     {
         try
         {
+            //Get the data for the next Video to be uploaded
             toUploadObject = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",false).equalTo("local",true).findFirst();
 
             FileMetaData myFileMetaData = new FileMetaData(toUploadObject.getId());  //create the FileMetaData object
@@ -90,9 +97,10 @@ public class VideoUploadService extends Service {
             java.io.File file = new java.io.File(toUploadObject.getPath());
             if(!file.exists())
             {
-                Log.e(TAG,toUploadObject.getId()+" deleted(Not Synced)");
+                Log.e(TAG,toUploadObject.getId()+" deleted(Not Synced)");   //File is deleted, and thus cannot be synced
                 updateRealmAvoid();
             }
+            //Uploading the Video as FileInputStream
             mKinveyClient.file().upload(myFileMetaData, fIn, new UploaderProgressListener() {
                 @Override
                 public void onSuccess(FileMetaData fileMetaData) {
@@ -129,6 +137,9 @@ public class VideoUploadService extends Service {
 
     private void updateRealmAvoid()
     {
+        /**
+         * This marks the Image uploaded data as synced
+         */
         realm.beginTransaction();
         toUploadObject.setLocal(false);
         realm.commitTransaction();
@@ -137,6 +148,10 @@ public class VideoUploadService extends Service {
 
     private void next()
     {
+        /**
+         * This marks the File which has been deleted without syncing as not Local,
+         * So that next time, attempts are not made to upload it.
+         */
         if (tobeUploaded == 1)
             stopSelf();
         else

@@ -25,6 +25,11 @@ import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
 public class UploadService extends Service {
+    /**
+     * This service Uploads Images one at a time. To keep number of simultaneous uploads
+     * to one, which gives better performance (Too many simultaneous upload Hangs device),
+     * The service is started again if there are more more Images to be uploaded, else stopped.
+     */
 
     private static final String TAG = "UploadService";
 
@@ -57,10 +62,11 @@ public class UploadService extends Service {
 
         mKinveyClient = new Client.Builder(Constants.appId, Constants.appSecret, this.getApplicationContext()).build();
 
-        if (mKinveyClient.user().isUserLoggedIn())
+        if (mKinveyClient.user().isUserLoggedIn())  //Checks if Device is logged in Kinvey
             upload();
         else {
-            mKinveyClient.user().login(new KinveyUserCallback() {
+            mKinveyClient.user().login(new KinveyUserCallback() //Login User if user not Logged In
+            {
                 @Override
                 public void onFailure(Throwable error) {
                     Log.e(TAG, "Login Failure", error);
@@ -75,7 +81,6 @@ public class UploadService extends Service {
             });
         }
 
-        // Let it continue running until it is stopped.
         return START_NOT_STICKY;
     }
 
@@ -83,6 +88,7 @@ public class UploadService extends Service {
     {
         try
         {
+            //Get the data for the next image to be uploaded
             toUploadObject = realm.where(GalleryObject.class).equalTo("synced", false).equalTo("isimage",true).equalTo("local",true).findFirst();
             FileMetaData myFileMetaData = new FileMetaData(toUploadObject.getId());  //create the FileMetaData object
             myFileMetaData.setPublic(true);  //set the file to be pubicly accesible
@@ -90,9 +96,10 @@ public class UploadService extends Service {
             java.io.File file = new java.io.File(toUploadObject.getPath());
             if(!file.exists())
             {
-                Log.e(TAG,toUploadObject.getId()+" deleted(Not Synced)");
+                Log.e(TAG,toUploadObject.getId()+" deleted(Not Synced)");   //File is deleted, and thus cannot be synced
                 updateRealmAvoid();
             }
+            //Uploading the Image as file
             mKinveyClient.file().upload(myFileMetaData, file, new UploaderProgressListener() {
 
                 @Override
@@ -122,6 +129,9 @@ public class UploadService extends Service {
 
     private void updateRealmUpload()
     {
+        /**
+         * This marks the Image uploaded data as synced
+         */
         realm.beginTransaction();
         toUploadObject.setSynced(true);
         realm.commitTransaction();
@@ -130,6 +140,10 @@ public class UploadService extends Service {
 
     private void updateRealmAvoid()
     {
+        /**
+         * This marks the File which has been deleted without syncing as not Local,
+         * So that next time, attempts are not made to upload it.
+         */
         realm.beginTransaction();
         toUploadObject.setLocal(false);
         realm.commitTransaction();
@@ -138,6 +152,9 @@ public class UploadService extends Service {
 
     private void next()
     {
+        /**
+         * If more images has to be uploaded, resstart service, else stop
+         */
         if (tobeUploaded == 1)
             stopSelf();
         else
