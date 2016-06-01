@@ -12,7 +12,9 @@ Captured Videos are stored in: internal/Camrena/Videos
 4. Photos Captured via front camera not mirrored. It has been handled internally.
 5. Realm local database
 6. Recyclerview as Gridview for Image/Video gallery
-7. Auto resize of the Camera preview to a supported camera resolution to prevent preview stretch. ie. if the device has a 16:9 display resolution, but camera image supports only 4:3 resolutions, the Camera preview will resize to a 4:3 preview
+7. Auto resize of the Camera preview to a supported camera resolution to prevent preview stretch. ie. if the device has a 16:9 display resolution, but camera image supports only 4:3 resolutions, the Camera preview will resize to a 4:3 preview. Example (Asus Fonepad 7 K012 supports only 4:3 images in the front cam, but is a 16:9 screen device)-
+
+![no_stretch](https://github.com/suchoX/Camrena/blob/master/Screens/no_stretch.jpg)
 
 ### Auto-Sync Feature (Check the icons on the Image/Video top)
 
