@@ -17,7 +17,7 @@ Captured Videos are stored in: internal/Camrena/Videos
 
 1. Image/Video is present in local memory but not synced (Accessed Locally)-
 
-![alt text](https://github.com/suchoX/Camrena/blob/master/Screens/local_notsynced.png = 72x128)
+<img src="https://github.com/suchoX/Camrena/blob/master/Screens/local_notsynced.png" alt="Drawing" style="width: 144px;"/>
 
 2. Image/Video is present in local memory and synced to cloud (Accessed Locally)-
 
