@@ -102,6 +102,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
             new imageSave().execute(bitmapImage);
             camera.startPreview();
             photoCapture.setVisibility(View.VISIBLE);
+            gallery.setVisibility(View.VISIBLE);
+            videoCapture.setVisibility(View.VISIBLE);
+            swapCamera.setVisibility(View.VISIBLE);
         }
     };
 
@@ -137,6 +140,9 @@ public class PhotoActivity extends AppCompatActivity implements SurfaceHolder.Ca
                 cameraClick.start();
                 camera.takePicture(null, null, captureCallback);
                 photoCapture.setVisibility(View.INVISIBLE);
+                gallery.setVisibility(View.INVISIBLE);
+                videoCapture.setVisibility(View.INVISIBLE);
+                swapCamera.setVisibility(View.INVISIBLE);
             }
         });
 
